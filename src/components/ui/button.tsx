@@ -1,0 +1,44 @@
+import * as React from 'react';
+import { Slot } from 'radix-ui';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
+
+const buttonVariants = cva(
+  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium outline-none transition-[color,background-color,border-color,box-shadow] duration-150 focus-visible:ring-[3px] focus-visible:ring-ring/35 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
+  {
+    variants: {
+      variant: {
+        default: 'bg-primary text-primary-foreground shadow-xs hover:bg-primary/88',
+        brand: 'bg-brand text-brand-foreground shadow-xs hover:bg-brand/90',
+        destructive: 'bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90',
+        outline: 'border border-border bg-background shadow-xs hover:border-foreground/20 hover:bg-accent hover:text-accent-foreground',
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/70',
+        ghost: 'hover:bg-accent hover:text-accent-foreground',
+        link: 'text-brand underline-offset-4 hover:underline',
+      },
+      size: {
+        default: 'h-9 px-4 py-2 has-[>svg]:px-3.5',
+        sm: 'h-8 gap-1.5 px-3.5 text-[13px] has-[>svg]:px-3',
+        lg: 'h-11 px-6 has-[>svg]:px-5',
+        icon: 'size-9',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'default',
+    },
+  },
+);
+
+export type ButtonProps = React.ComponentProps<'button'> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean;
+  };
+
+function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {
+  const Comp = asChild ? Slot.Root : 'button';
+
+  return <Comp data-slot="button" className={cn(buttonVariants({ variant, size, className }))} {...props} />;
+}
+
+export { Button, buttonVariants };

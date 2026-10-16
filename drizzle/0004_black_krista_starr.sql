@@ -1,0 +1,1 @@
+ALTER TABLE `submissions` ADD `kind` text DEFAULT 'entry' NOT NULL;

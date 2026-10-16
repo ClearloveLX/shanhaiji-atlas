@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1792035761055,
+      "tag": "0000_condemned_leech",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792039173999,
+      "tag": "0001_friendly_leopardon",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792049048197,
+      "tag": "0002_ambitious_blue_marvel",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792067630690,
+      "tag": "0003_safe_bedlam",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792119999720,
+      "tag": "0004_black_krista_starr",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792120015457,
+      "tag": "0005_material_shiva",
+      "breakpoints": true
+    }
+  ]
+}

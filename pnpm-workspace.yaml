@@ -1,0 +1,57 @@
+# pnpm 11 的配置都放在这里（package.json 的 pnpm 字段已不再读取）。
+
+# ★ nodeLinker: hoisted —— Windows 上的硬性要求，别改回默认值。
+# 原因：默认布局用符号链接组织 node_modules，而 Windows 非管理员账户
+# 没有 SeCreateSymbolicLinkPrivilege（开发者模式关着时）无法创建符号链接。
+# `next build` 在 output: 'standalone' 下会按 traced 文件重建符号链接，直接
+# EPERM 报错、构建失败。改成 hoisted 后 node_modules 里是真实目录，构建正常。
+nodeLinker: hoisted
+
+# allowBuilds：允许跑安装脚本的依赖。
+# esbuild 需要 postinstall 准备二进制。
+# better-sqlite3 显式设为 false：跳过它的 postinstall（省一次安装时间，
+# 也避免在没装 Visual Studio 的 Windows 上走到 node-gyp）。
+#
+# ⚠️ 为什么「跳过安装脚本」也照样能用：better-sqlite3 v13 已经改用 **N-API 预编译包**，
+#    npm 包里直接带着 prebuilds/*.node —— 八个平台的二进制（含 linux-x64），
+#    lib/binding.js 按 process.platform / process.arch 自动挑一个加载。
+#    既没有 build/Release 目录，也不需要按 Node ABI 现场编译。
+#    推论：**「Windows 构建的产物拷到 Linux 会报 invalid ELF header」在 v13 上不成立**，
+#    standalone 里已经带着 Linux 要用的那个 .node，服务器上不需要再 npm install 一次。
+allowBuilds:
+  better-sqlite3: false
+  esbuild: true
+
+# ★ supportedArchitectures：本地（Windows）安装时**顺带**装上 Linux 版的可选依赖。
+#   必须加，否则 next/image 在生产环境会 500。
+#
+#   原因：Next 15 的图片优化器内部 `require('sharp')`
+#        （node_modules/next/dist/server/image-optimizer.js:208），
+#        而 sharp 的真正二进制是 optionalDependencies 里的
+#        @img/sharp-<平台>-<架构> + @img/sharp-libvips-<平台>-<架构>。
+#        pnpm 默认只装「当前平台」那一份 —— Windows 上装出来是 sharp-win32-x64，
+#        拷到 Linux 服务器后 require('sharp') 找不到 linux-x64，优化接口报错，
+#        表现是**全站图标全裂**（前台卡片和后台表格都用 next/image）。
+#   这两行只影响「装哪些包」，不影响构建产物。
+supportedArchitectures:
+  os:
+    - win32
+    - linux
+  cpu:
+    - x64
+  libc:
+    - glibc
+
+minimumReleaseAgeExclude:
+  - '@next/env@15.5.28'
+  - '@next/eslint-plugin-next@15.5.28'
+  - '@next/swc-darwin-arm64@15.5.28'
+  - '@next/swc-darwin-x64@15.5.28'
+  - '@next/swc-linux-arm64-gnu@15.5.28'
+  - '@next/swc-linux-arm64-musl@15.5.28'
+  - '@next/swc-linux-x64-gnu@15.5.28'
+  - '@next/swc-linux-x64-musl@15.5.28'
+  - '@next/swc-win32-arm64-msvc@15.5.28'
+  - '@next/swc-win32-x64-msvc@15.5.28'
+  - eslint-config-next@15.5.28
+  - next@15.5.28

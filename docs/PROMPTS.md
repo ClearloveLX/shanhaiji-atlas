@@ -1,5 +1,35 @@
 # Vibe Coding 提示词全集 — 山海集 Atlas（动态可维护版）
 
+> ## ⚠️ 历史归档 —— 记录的是当时的想法，**不是当前事实**
+>
+> 本文件是项目启动期（D0–D11）写给 AI 的提示词**原件**，保留原样以存证。
+> 项目后来改过架构，**下面有多处已经作废，不要照做**。
+>
+> - **当前项目事实**以 [`DEPLOY.md`](DEPLOY.md)、[`SERVER-DEPLOY.md`](SERVER-DEPLOY.md)、[`DATA-MODEL.md`](DATA-MODEL.md) 为准。
+> - **服务器事实**以运维目录下的 `部署事实基准.md` 为准（该文件在服务器运维工作区，**不在本仓库**）。
+>
+> ### 关于示例值（已脱敏）
+>
+> 本文件里的主机名、IP、内网地址、实例 ID、开发机绝对路径、内存/磁盘的精确数字**都已换成占位或约数**，
+> 例如「可用内存约 1.2 GB」「约 32 GB 可用磁盘」「`你的项目目录`」。
+> **实际部署请一律换成你自己的值**——这些数字只是当年那台机器的快照，不是规格要求。
+>
+> ### 已知作废 / 出错的地方（行号为**加本横幅前**的原文件编号）
+>
+> | 位置 | 当年写的 | 现在是什么 |
+> |---|---|---|
+> | `:1127` | 「安全组只开放 **22** / 80 / 443」 | SSH 端口后来**从 22 改掉了**。**别再用 22** —— 改成高位端口能挡掉绝大部分自动化扫描（但挡不住针对性扫描：改了端口之后仍有 IP 来敲门，真正的防线是仅公钥认证 + fail2ban）。<br>这个文件里不写具体端口号，**按你自己的实际端口替换**；安全组和 ufw 都要放行那一个端口 + 80 + 443 |
+> | `:114`、`:189` | 「这四个 PRAGMA，一个都不能少」 | **五条**（`src/db/index.ts`）：`journal_mode` / `busy_timeout` / `synchronous` / `foreign_keys` / `cache_size` |
+> | `:394` | 「platform 最多 3 个」 | **platform 6 个**（`src/lib/validation.ts` 的 `MAX_TAGS_PER_DIM`）。同句的 topic 3 / scene 3 / attr 4 / price 1 / quality 2 **是对的** |
+> | `:495` | 「检查 N 条，正常 x / **警告 y** / 失败 z」 | 只有**两档**：`正常 / 失败`，**没有「警告」**（`scripts/link-check.ts`） |
+> | `:679` | 「每天有一次**自动任务**把 `expires_at < now()` 置为 `is_active=false`」 | **没有自动任务**。要自己配 crontab 调 `/api/cron/qrcodes`（见 `DEPLOY.md` §6.5）；没配 cron 就不会自动发生，后台还有「一键停用所有已过期的码」按钮 |
+> | `:242`、`:999` | 部署方式写成「**rsync 覆盖 `app/`**」；「`app/public/` 里只剩 favicon、og 兜底图」 | 本机**没有 rsync**，现在是 **tar.gz + SFTP**；`public/` **是空的**，favicon 在 `src/app/favicon.ico`，分享图是动态路由 `src/app/og/route.tsx`，不在 `public/og/` |
+> | `:1042`、`:1045-1048`、`:1055`、`:1061-1074` | 整段 rsync 发布流程；`--exclude "node_modules/better-sqlite3"`；`invalid ELF header`；「服务器上补装 better-sqlite3」；「折腾不动就切方案 B」 | **全部作废**。`better-sqlite3` **v13 已改用 N-API 预编译包**（npm 包内直接带 8 个平台的 `prebuilds/*.node`，没有 `build/Release/`），**不绑 Node ABI** —— Windows 构建产物**直接能在 Linux 跑**，不需要 exclude、不需要服务器补装、不需要切方案 B |
+>
+> **仍然有效、可以照做的部分**：`output: 'standalone'` + 原生 Node + Caddy + systemd 的部署形态；
+> `releases/` 与 `data/` 分离、`current` 软链、永不在 `current/` 里构建；
+> 「上传文件一律进 `data/uploads/`，绝不进 `public/`」这条铁律；`next.config.ts` 里的 `serverExternalPackages: ['better-sqlite3']`。
+
 > 用法：按顺序把每段代码块**原样**粘给 AI 编码助手（Cursor / Claude Code / Codex / Windsurf 都行）。
 > 一次只发一段，等它自检完、报完结果，再发下一段。
 > 每段末尾的「验收」是你要亲自检查的点，不通过就把报错原文贴回去。
@@ -25,7 +55,7 @@
 ⚠️ 重要：绝对不要使用 output: 'export'。这个项目必须能读写数据库，
    不要把它做成静态站，不要用 Markdown/JSON 文件存内容。
 
-当前目录 D:\Vibe Coding\shanhaiji-atlas 里已有 docs/、AGENTS.md、README.md 三个东西，
+当前项目目录 shanhaiji-atlas 里已有 docs/、AGENTS.md、README.md 三个东西，
 **这三个都不能删**（AGENTS.md 是常驻规则，docs/ 是设计和提示词，README.md 是项目说明）。
 
 【1】创建项目
@@ -33,7 +63,7 @@ pnpm create next-app@latest . --ts --tailwind --eslint --app --src-dir --import-
 pnpm install
 
 ⚠️ 如果报「目录非空 / 已存在文件」：
-   1. 把 AGENTS.md 和 README.md 临时移到 D:\Vibe Coding\ 下
+   1. 把 AGENTS.md 和 README.md 临时移到 你的项目父目录 下
    2. 跑 create-next-app（docs/ 在它的白名单里，不会冲突）
    3. 把 AGENTS.md 移回来覆盖脚手架生成的同名文件（AGENTS.md 脚手架不会生成，直接放回）
    4. README.md 脚手架会生成一份通用的，**先把它另存为 README-scaffold.md 备查**，
@@ -141,160 +171,49 @@ pnpm dev
 
 【1】src/db/schema.ts —— Drizzle 表定义
 
-⚠️ 这是 **SQLite** 项目，用 drizzle-orm/sqlite-core，不是 pg-core。
-   下面用 Postgres 风格的记法写字段（为了好读），你按下表翻译成 SQLite：
+★★★ 完整可用的 Drizzle 代码在 **docs/DATA-MODEL.md 第二节**。
+    **先完整读一遍那个文件，然后照抄它的代码，不要自己凭记忆写、不要自己发挥。**
+    （如果项目已经建好，`src/db/schema.ts` 已是权威，以那个文件为准。）
 
-| 本文记法 | Drizzle (sqlite-core) 写法 |
-|---|---|
-| `uuid pk defaultRandom()` | `text('id').primaryKey().$defaultFn(() => crypto.randomUUID())` |
-| `varchar('x', {length:60})` | `text('x')`（SQLite 不强制长度，长度校验交给 Zod） |
-| `text` | `text` |
-| `jsonb default '{}'` | `text('meta', { mode: 'json' }).$type<Meta>().notNull().default({})` |
-| `boolean default false` | `integer('featured', { mode: 'boolean' }).notNull().default(false)` |
-| `integer` | `integer` |
-| `smallint` | `integer` |
-| `numeric(10,7)` | `real('lat')` |
-| `timestamptz defaultNow()` | `integer('created_at', { mode: 'timestamp_ms' }).notNull().$defaultFn(() => new Date())` |
-| `date` | `text('visited_on')`（存 'YYYY-MM-DD' 字符串） |
-| `unique(a,b)` / `索引` | 同样用 `uniqueIndex()` / `index()`，写法一样 |
-| `ON CONFLICT ... DO UPDATE` | SQLite 支持，用法相同 |
+⚠️ 这是 **SQLite** 项目，用 `drizzle-orm/sqlite-core`，不是 pg-core。
+   不允许出现 `pgTable` / `uuid()` / `varchar()` / `jsonb` / `timestamptz` /
+   `defaultRandom()` / `defaultNow()` / `bigserial` —— 这些在 sqlite-core 里编译不过。
+   类型映射表见 DATA-MODEL.md 第 2.0 节。
 
-`import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core'`
+必须存在的 11 张表（照抄 DATA-MODEL.md，写完后逐条打勾）：
+
+  □ entries          主表：type / linkMode / visibility / slug / name / summary / url /
+                     icon / cover / note / meta / featured / status / sortWeight /
+                     viewCount / clickCount / 三个时间戳 / deletedAt
+  □ entry_tools      自研工具 1:1：component / runtime / requiresLogin / version / usageCount / changelog
+  □ entry_branches   线下门店 1:N：address / city / lat / lng / poiSource / poiId / phone /
+                     hours / priceLevel / isPrimary / sort / status
+  □ entry_qrcodes    二维码 1:N：label / kind / image / tip / **expiresAt** / isActive / showCount / sort
+  □ entry_private    站长私密字段 1:1：rating / status / note / contact / paid / visitedOn
+  □ tags             标签字典：dim / slug / name / color / icon / desc / sort，唯一 (dim, slug)
+  □ entry_tags       条目↔标签多对多，复合主键
+  □ submissions      访客投稿：name / url / type / reason / contact / status / resultId / ipHash
+  □ link_checks      死链巡检历史：entryId / statusCode / ok / error / checkedAt
+  □ click_logs       点击统计**按天聚合**：复合主键 (entryId, day)，count
+  □ settings         键值配置：key / value(json) / updatedAt
+
+写完后必须逐条自查：
+  - 全文 grep 一遍 `pgTable|jsonb|timestamptz|varchar(|defaultRandom|defaultNow`，必须 0 命中
+  - 时间戳一律 `integer(..., { mode: 'timestamp_ms' })`，默认值用 `$defaultFn(() => new Date())`
+  - 主键一律 `text('id').primaryKey().$defaultFn(() => crypto.randomUUID())`
+  - 布尔一律 `integer(..., { mode: 'boolean' })`，不要裸 0/1
+  - `click_logs.day` 和 `entry_private.visited_on` 用 `text` 存 'YYYY-MM-DD'
+
+关键约束（Zod 校验 + 服务端强制，不是数据库 CHECK）：
+  link_mode='external' → url 非空且合法
+  link_mode='internal' → url 为空，且 component 必须能在 src/tools/registry.ts 里找到
+  link_mode='place'    → 必须至少有 1 条 entry_branches
 
 搜索注意：**不要用 pg_trgm**（那是 Postgres 的东西）。条目量在几千以内，
 直接用 `LIKE '%关键词%'` 就够快（几毫秒），不要上 FTS5。
 
-entries（三类条目统一一张表）
-  id             uuid pk defaultRandom()
-  type           varchar(10) not null       -- 'tool' | 'site' | 'shop'（决定进哪个列表）
-  link_mode      varchar(10) not null       -- ★ 'external' | 'internal' | 'place'（决定详情页长什么样）
-  slug           varchar(80) not null
-  name           varchar(60) not null
-  name_en        varchar(80)
-  summary        varchar(200) not null      -- 一句话，20-60 字，列表页就靠它
-  url            text                       -- ★ 可空：external 时必填，internal/place 时为空
-  icon           text                       -- /icons/xxx.png 或空
-  cover          text                       -- ★ 封面图 /covers/xxx.webp，详情页头图
-  note           text                       -- 编辑手记
-  meta           jsonb not null default '{}'::jsonb
-                 -- 只放【不需要查询】的展示碎片，例如：
-                 -- tool: { offline?: bool }
-                 -- site: { needProxy?: bool }
-  featured       boolean not null default false
-  status         varchar(8) not null default 'active'   -- active | stale | dead
-  sort_weight    integer not null default 0             -- 手工置顶，越大越前
-  view_count     integer not null default 0
-  click_count    integer not null default 0             -- ★ 外链点击总数
-  last_checked_at timestamptz
-  created_at     timestamptz not null defaultNow()
-  updated_at     timestamptz not null defaultNow()
-  deleted_at     timestamptz                            -- 软删除，null 表示未删
-  唯一：(type, slug)
-  索引：(type, status)、(link_mode)、(featured)、(created_at desc)
-  约束（DB check + Zod 双重）：
-    link_mode='external' → url 非空且合法
-    link_mode='internal' → url 为空，且必须存在对应的 entry_tools 记录
-    link_mode='place'    → 必须至少有 1 条 entry_branches
-  注意：原来放在 meta 里的 city / channel / priceLevel 全部移出到 entry_branches，
-        因为【需要被查询的字段必须是独立列】，jsonb 不是垃圾桶。
-
-entry_tools（★ 新增，自研工具专属，与 entries 是 1:1）
-  entry_id        uuid pk fk → entries.id on delete cascade
-  component       varchar(60) not null   -- src/tools/ 下的目录名，必须与 registry.ts 的 key 完全一致
-  runtime         varchar(10) not null default 'client'   -- client | server
-  requires_login  boolean not null default false
-  version         varchar(20)
-  usage_count     integer not null default 0
-  changelog       jsonb not null default '[]'::jsonb      -- [{ version, date, note }]
-  保存时服务端必须读 src/tools/registry.ts 校验 component 存在，
-  不存在就报错「组件 xxx 未在 src/tools/registry.ts 注册」
-
-entry_branches（★ 新增，线下门店，与 entries 是 1:N）
-  id         uuid pk defaultRandom()
-  entry_id   uuid fk → entries.id on delete cascade
-  name       varchar(60)      -- 「静安寺店」，单店可留空
-  address    varchar(200) not null
-  province   varchar(20)
-  city       varchar(20) not null    -- ★ 必须填，用于筛选
-  district   varchar(20)
-  lat        numeric(10,7)
-  lng        numeric(10,7)
-  poi_source varchar(10)      -- amap | baidu | manual
-  poi_id     varchar(64)
-  phone      varchar(30)
-  hours      varchar(120)     -- 「11:00-22:00，周一休」
-  price_level smallint        -- 1-3
-  is_primary boolean not null default false
-  sort       integer not null default 0
-  status     varchar(8) not null default 'active'
-  索引：(entry_id)、(city)、(lat, lng)
-  注意：一个品牌一条 entry，多家门店多条 branch。不要一家店建一条 entry。
-
-entry_qrcodes（★ 新增，二维码，与 entries 是 1:N）
-  id         uuid pk defaultRandom()
-  entry_id   uuid fk → entries.id on delete cascade
-  label      varchar(30) not null    -- 「店主微信」「外卖群」「公众号」
-  kind       varchar(20) not null    -- wechat-group | wechat-personal | wechat-oa | miniprogram | alipay | custom
-  image      text not null           -- /qrcodes/xxx.png，必须存在自己服务器上
-  tip        varchar(120)            -- 码下方的一句提示
-  expires_at timestamptz             -- ★ 微信群码 7 天过期，这个字段是运营刚需
-  is_active  boolean not null default true
-  show_count integer not null default 0    -- 被展开查看次数
-  sort       integer not null default 0
-  索引：(entry_id, sort)、(expires_at)     -- 后者供后台「快过期」看板使用
-
-click_logs（★ 新增，点击统计，按天聚合，不要存明细行）
-  entry_id  uuid fk → entries.id on delete cascade
-  day       date not null
-  count     integer not null default 0
-  pk(entry_id, day)
-  写入方式：INSERT ... ON CONFLICT (entry_id, day) DO UPDATE SET count = click_logs.count + 1
-
-tags
-  id        uuid pk defaultRandom()
-  dim       varchar(12) not null    -- scene | attr | platform | price | quality
-  slug      varchar(40) not null
-  name      varchar(20) not null
-  color     varchar(7) not null     -- #RRGGBB
-  icon      varchar(40)             -- lucide 组件名
-  desc      text                    -- 标签聚合页的正文，30-60 字
-  sort      integer not null default 0
-  unique(dim, slug)
-  索引：(dim, sort)
-
-entry_tags
-  entry_id uuid fk → entries.id on delete cascade
-  tag_id   uuid fk → tags.id on delete cascade
-  pk(entry_id, tag_id)
-  索引：(tag_id)
-
-submissions（访客投稿）
-  id         uuid pk
-  name       varchar(60) not null       -- 推荐的东西叫什么
-  url        text not null
-  type       varchar(8)                 -- 推荐人选的类型，可为空
-  reason     varchar(300)               -- 推荐理由
-  contact    varchar(100)               -- 联系方式
-  status     varchar(10) not null default 'pending'   -- pending | approved | rejected
-  result_id  uuid fk → entries.id       -- 通过后生成的条目
-  created_at timestamptz defaultNow()
-  reviewed_at timestamptz
-  ip_hash    varchar(64)                -- 简单防刷，哈希后存
-  索引：(status, created_at desc)
-
-link_checks
-  id         uuid pk
-  entry_id   uuid fk → entries.id on delete cascade
-  status_code integer
-  ok         boolean not null
-  error      text
-  checked_at timestamptz defaultNow()
-  索引：(entry_id, checked_at desc)
-
-settings
-  key   varchar(40) pk
-  value jsonb not null
-  updated_at timestamptz defaultNow()
+字段语义的说明（为什么这么设计、哪些字段不能塞进 `meta`）在 DATA-MODEL.md 各小节里，
+**读一遍再动手**。
 
 【2】src/db/index.ts
 （D0 的第 10 步已经建过，这里确认一遍）better-sqlite3 连接 + 四个 PRAGMA。
@@ -967,24 +886,24 @@ src/components/admin/IconUploader.tsx：
 
 【1】schema 改动（走正常流程：改 schema.ts → db:generate → db:migrate）
 
-entries 加一列：
-  visibility  varchar(10) not null default 'public'   -- public | unlisted | private
-  索引：(visibility) 或并入 (type, visibility, status) 复合索引
+⚠️ 这是 SQLite 项目。**不要凭记忆写 Drizzle 代码**，
+   `entries` 和 `entry_private` 的完整定义照抄 docs/DATA-MODEL.md 第 2.1 和 2.6 节。
 
-新增 entry_private（1:1，只有站长看得到的字段）：
-  entry_id   uuid pk fk → entries.id on delete cascade
-  rating     smallint           -- 我的评分 1-5
-  status     varchar(12)        -- todo 想去 | visited 去过 | verified 已验证 | avoid 踩雷
-  note       text               -- 私人备注
-  contact    varchar(120)       -- 老板微信/电话等不公开联系方式
-  paid       varchar(60)        -- 实际花费
-  visited_on date
-  updated_at timestamptz
+改动清单：
 
-tags.dim 增加 'private' 维度，seed 里加上 5 个：
-  todo 想去 / visited 去过 / fav 私藏 / avoid 不推荐 / friend 朋友开的
+a. entries 加一列 visibility（`text('visibility').notNull().default('public')`）
+   取值 public | unlisted | private，行为矩阵见 PRIVACY.md 第一节
+   加索引 `index('entries_visibility_idx').on(t.visibility)`
 
-settings 表预置：submissionsOpen(true) / maintenanceMode(false) / defaultVisibility('public')
+b. 新增 entry_private（1:1）：rating / status / note / contact / paid / visitedOn / updatedAt
+   完整代码在 DATA-MODEL.md 第 2.6 节
+
+c. tags.dim 增加 'private' 维度，seed 里加上 5 个：
+   todo 想去 / visited 去过 / fav 私藏 / avoid 不推荐 / friend 朋友开的
+
+d. settings 表预置：submissionsOpen(true) / maintenanceMode(false) / defaultVisibility('public')
+
+改完 grep 一遍 `pgTable|jsonb|timestamptz|varchar(` 确认 0 命中。
 
 【2】★ 铁律 1：公开路由永远不查非公开数据
 
@@ -1102,7 +1021,7 @@ f. /admin/imports 导出的 JSON 含私密数据，在导出页写一行红字�
 
 ```text
 ⚠️ 这个项目 **不用 Docker、不用 PostgreSQL**。部署方案见 docs/SERVER-DEPLOY.md，
-   先读那个文件。目标机器：Ubuntu / 2 核 / 可用内存 1314 MB / 33 GB 磁盘 / 全新空机。
+   先读那个文件。目标机器：Ubuntu / 2 核 / 可用内存约 1.2 GB / 约 32 GB 可用磁盘 / 全新空机。
 
 【1】确认上传目录已经是 data/uploads/（D1 第 8 步应该已经做了）
 - grep 一遍项目，确认没有任何地方往 public/ 写上传文件
@@ -1142,8 +1061,8 @@ ls -lh "$DEST.gz"
 
 【5】docs/DEPLOY.md
 写清完整流程，面向「一年后回来看的自己」：
-- 机器现状：2 核 / 1735 MB 内存（可用 1314 MB）/ 33 GB 盘 / Ubuntu
-  **swap 2047 MB，挂 fstab，两次重启自动挂载，压测 1800 MB 分配下 swap 峰值 815 MB 无 OOM**
+- 机器现状：2 核 / 2 GB 内存（可用约 1.2 GB）/ 约 32 GB 可用磁盘 / Ubuntu
+  **swap 2 GB，挂 fstab，两次重启自动挂载，压测 1800 MB 分配下 swap 峰值 815 MB 无 OOM**
   （这条要写进去，它是"服务器上构建不会挂"的依据）
 - **明确写明：不装 Docker、不装 PostgreSQL。** 数据库是 SQLite（一个文件）
 - 服务器要装的软件（一次性）：Node 22、Caddy、sqlite3 CLI、build-essential+python3
@@ -1164,7 +1083,7 @@ ls -lh "$DEST.gz"
 - **备份与恢复**：具体的 .backup 命令和恢复命令
 - 常见故障：服务起不来怎么查日志、证书申请失败怎么办、SQLITE_BUSY 怎么处理
 - ⚠️ 单独一节写清构建放在哪：**默认本地构建 → rsync 到新 release 目录 → 换软链**。
-  服务器构建是正当备选（swap 2047 MB 已实测扛住 1800 MB 分配，不会 OOM），
+  服务器构建是正当备选（swap 2 GB 已实测扛住 1800 MB 分配，不会 OOM），
   但要写清代价：耗时 5-15 分钟，且构建期间站点会被换出到 swap 变慢。
   两种方式都写成可直接执行的命令，不要只写一种然后说另一种禁止。
 - 一年后要检查什么：磁盘占用、备份是否还在生成、releases/ 有没有堆积、Node 版本

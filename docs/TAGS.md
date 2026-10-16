@@ -13,18 +13,42 @@
 | 维度 | `dim` 值 | 中文 | 基数 | 必填 | 作用 |
 |---|---|---|---|---|---|
 | 类型 | `entries.type` | 类型 | 单值 | ✅ | 决定进哪张列表、详情页用哪个模板 |
+| 主题 | `topic` | 主题 | 0–3 个 | ❌ | **这一条属于哪一类东西**（AI…），列表页第一个筛选组 |
 | 场景 | `scene` | 场景 | 1–3 个 | ✅ 至少 1 个 | 首页「按场景逛」、主要 SEO 落地页 |
 | 属性 | `attr` | 属性 | 0–4 个 | ❌ | 筛选主力（免费 / 免登录 / 需境外访问…） |
-| 平台 | `platform` | 平台 | 0–3 个 | ❌ | 工具类条目的主要筛选维度 |
+| 平台 | `platform` | 平台 | 0–6 个 | ❌ | **枚举项**：有官方客户端就勾上，端多不代表定位不清 |
 | 价格 | `price` | 价格 | 0–1 个 | ❌ | 工具 / 店铺可用 |
 | 质量 | `quality` | 质量 | 0–2 个 | ❌ | 编辑侧标记，影响排序与角标 |
 
 **基数上限是硬的**，由 `src/lib/validation.ts` 的 Zod schema 和后台 TagPicker 双重拦截。
 `scene` 打超过 3 个就等于没打。
 
+`platform` 是唯一的例外：它记录的是**事实**（这个东西有没有 macOS 客户端），不是倾向。
+一个对话助手同时有网页 / iOS / Android / Windows / macOS 是很正常的，
+卡在 3 个会让「按平台筛选」直接筛错——漏掉一个真有的客户端，比多打两个更糟。
+所以它的上限等于字典条数（6），只有 `scene` 和 `attr` 才需要克制：
+它们表达倾向，同一维度里互相竞争的标签最多留 3 个。
+
+**`topic` 和 `scene` 的区别**（最容易混的一对）：
+
+- `topic` 回答「**这是哪一类东西**」——AI、以后可能有的「开发工具」「设计资源」。同一类东西可以服务很多场景。
+- `scene` 回答「**你在干什么的时候会用它**」——办公、学习、出行。它是首页「按场景逛」和 SEO 落地页的骨架，必填。
+
+举例：ChatGPT 是 `topic=ai` + `scene=work,study,create`；
+它的场景标签说明「能拿来干什么」，主题标签说明「它是什么」。
+
 ---
 
 ## 2. 初始标签字典（`pnpm db:seed` 灌入）
+
+### 2.0 `topic` 主题（1 个）
+
+| slug | 名称 | 收录什么 |
+|---|---|---|
+| `ai` | AI | 以大模型能力为核心的工具与服务：对话、生成、检索，以及配套的开发者接口 |
+
+这一维度按需长：再出现成规模的一类东西（比如开发工具、设计资源）时再加，
+不要为了「看起来整齐」提前建空标签。
 
 ### 2.1 `scene` 场景（12 个）
 
@@ -60,6 +84,9 @@
 
 `web` 网页 · `ios` · `android` · `windows` · `macos` · `miniprogram` 小程序
 
+有官方客户端就勾上，不数个数：筛 `macos` 时漏掉一个真有的，比多打两个更让人不信这个站。
+没有的不要凑（「能用浏览器打开」不算 Windows 客户端）。
+
 ### 2.4 `price` 价格（4 个）
 
 | slug | 名称 | 说明 |
@@ -75,36 +102,31 @@
 |---|---|---|
 | `editor-pick` | 编辑精选 | **必须人工勾选**，全站不超过 15% |
 | `high-repute` | 高口碑 | 有长期公开好评，非刷榜 |
-| `new` | 新上线 | 收录 90 天内自动标记，由脚本维护 |
-| `dead` | 已失效 | 与条目的 `status = 'dead'` 联动 |
+| `new` | 新上线 | 收录 90 天内的新条目。**人工挂**，没有脚本自动标记 |
+| `dead` | 已失效 | **人工挂**，和条目的 `status = 'dead'` 保持一致（两边分别改，没有联动代码） |
+
+> 这四个都是**编辑手工维护**的标签。死链巡检脚本只把连续 2 次失败的条目置为 `status = 'stale'`
+> （疑似失效），**不会**自动挂 `quality/dead`，也不会自动摘 `quality/new` —— 判断权在站长手里。
 
 ---
 
 ## 3. `tags` 表结构
 
-```ts
-// src/db/schema.ts
-export const tags = pgTable('tags', {
-  id:    uuid('id').primaryKey().defaultRandom(),
-  dim:   varchar('dim', { length: 12 }).notNull(),   // scene | attr | platform | price | quality
-  slug:  varchar('slug', { length: 40 }).notNull(),
-  name:  varchar('name', { length: 20 }).notNull(),
-  color: varchar('color', { length: 7 }).notNull(),  // #RRGGBB
-  icon:  varchar('icon', { length: 40 }),            // lucide 组件名
-  desc:  text('desc'),                               // 标签聚合页正文，30-60 字
-  sort:  integer('sort').notNull().default(0),
-}, (t) => [uniqueIndex('tags_dim_slug_idx').on(t.dim, t.slug)])
-```
+表定义在 [`DATA-MODEL.md`](DATA-MODEL.md) 第 2.7 节（**那里是唯一的 schema 来源，
+不要在这里另写一份代码**）。字段语义如下：
 
 | 字段 | 必填 | 说明 |
 |---|---|---|
-| `dim` | ✅ | 五个维度之一，配合 `slug` 唯一 |
+| `dim` | ✅ | **六个公开维度**之一（topic / scene / attr / platform / price / quality），**外加一个 `private`**（私藏，不出现在公开筛选栏）。配合 `slug` 唯一 |
 | `slug` | ✅ | 全小写英文 kebab-case，**不可随意改**（改了就是断链） |
 | `name` | ✅ | 中文展示名，2–4 字最佳，后台可随时改 |
 | `color` | ✅ | 十六进制，用于 chip 描边/底色，需满足白底 AA 对比度 |
 | `icon` | ❌ | lucide-react 组件名，必须真实存在 |
 | `desc` | ❌ | 一句话说明，渲染到标签聚合页顶部，**这是 SEO 正文，写满 30–60 字** |
 | `sort` | ✅ | 后台可拖拽调整，决定筛选栏里的显示顺序 |
+
+唯一约束 `(dim, slug)` —— 不同维度下可以有同名 slug（`attr.free` 和 `price.free` 共存），
+但引用时必须写全 `维度/slug`。
 
 ---
 
@@ -122,7 +144,14 @@ export const tags = pgTable('tags', {
 6. **改 `slug` 要谨慎。** 改 `name` / `color` / `desc` / `sort` 随便改；
    改 `slug` 会让 `/tags/{dim}/{slug}` 断链——如果那个页面已经被搜索引擎收录，
    后台会提示你，需要在 `/etc/caddy/Caddyfile` 里加一条 301。
-7. **一条条目的标签总数建议 3–8 个**，超过 8 个说明这条定位不清。
+7. **标签数量不用刻意凑、也不用刻意压，通常在 7–15 个之间。**
+   数量偏多往往是因为 `platform` 是枚举项（对话助手横跨五端就占 5 个）。
+   真正要警惕的是「打了但点进去对不上」——那比漏打更伤。
+8. **多标签查询默认「全部满足」（强关联）**，URL 上是 `match=all`，也是默认值所以不写进链接；
+   `match=any` 是弱关联（沾一个就出现）。列表页筛选栏在选中 ≥2 个标签时才渲染这个开关。
+   语义实现只有一处：`src/db/queries.ts` 的 `buildEntryConditions`（`tagMatch` 决定是逐个
+   `push` 成 AND，还是 `or(...)` 成一个条件）。**查询层的默认值是 `any`**，
+   那是为了不动后台既有的多标签筛选行为；公开列表页由 `parseListQuery` 显式传 `all`。
 
 ---
 
@@ -134,9 +163,10 @@ export const tags = pgTable('tags', {
 
 | 条目 | 标签 |
 |---|---|
+| ChatGPT | `type=tool` · `topic=ai` · `scene=work,study,create` · `attr=need-proxy,zh-ui,ads-free` · `platform=web,ios,android,windows,macos` · `price=freemium` · `quality=editor-pick,high-repute` |
 | Figma | `type=tool` · `scene=create,work` · `platform=web,macos` · `price=freemium` · `attr=maintained` |
 | 小红书 | `type=site` · `scene=fun,food,travel` · `platform=ios,android` · `attr=zh-ui` |
 | 某咖啡店 | `type=shop` · `scene=food` · `price=freemium` · `meta.city=上海` |
 
-UI 上 chip 的展示顺序**固定**为：`scene → attr → platform → price → quality`，
+UI 上 chip 的展示顺序**固定**为：`topic → scene → attr → platform → price → quality`，
 不要按查询返回顺序渲染，保证全站视觉一致。这个排序逻辑写在 `src/lib/tags.ts` 的 `sortChips()` 里。

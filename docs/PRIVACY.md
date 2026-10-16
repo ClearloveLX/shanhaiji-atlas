@@ -10,14 +10,17 @@
 
 ## 一、三档可见性
 
-给 `entries` 加一列：
+给 `entries` 加一列（定义见 [`DATA-MODEL.md`](DATA-MODEL.md) 第 2.1 节）：
 
 ```ts
-visibility: varchar('visibility', { length: 10 }).notNull().default('public')
+visibility: text('visibility').notNull().default('public')
 // public   公开：进列表、搜索、标签页、sitemap、RSS
 // unlisted 不列出：知道链接就能访问，用于发给朋友的专属推荐 / 还没准备好公开的页面
 // private  私密：只有站长登录后可见
 ```
+
+配套索引：`index('entries_visibility_idx').on(t.visibility)`，
+或直接并进 `(type, visibility, status)` 复合索引。
 
 `unlisted` 是顺带加的，成本为零但很有用（「这条我想分享给某个人，但不想让它出现在站内任何列表里」）。
 **不想用就永远不选它**，不影响其它部分。
@@ -172,12 +175,14 @@ export async function GET(req, { params }) {
 ```
 /me                      私密首页：我的收藏 / 想去 / 最近添加 / 待办
 /me/tools  /me/sites  /me/shops   各类型全量列表（含 public/unlisted/private）
-/me/tags                 私有标签管理
 /me/search               全量搜索（三种可见性都搜）
 /me/notes                私人笔记流（把 entry_private.note 按时间排）
 /me/settings             站点设置
 /me/entries/[id]         私密条目详情（复用前台详情组件）
 ```
+
+> 注意：**`/me` 下没有标签管理页。** 私密标签（`dim = 'private'`）和公开标签都在
+> `/admin/tags` 里统一维护（`TagManager` 的维度顺序是六个公开维度 + `private`）。
 
 布局：外面套一个简洁的站长外框（顶部一条「站长视图 · 返回公开站 · 退出」），
 内容区完全复用前台的组件。**成本很低，因为前台组件本来就已经写好了。**
@@ -196,18 +201,17 @@ Cache-Control: private, no-store
 有些内容不是「私密条目」，而是**公开条目上只有你能看到的备注**。
 比如：「这家其实一般，别周末去」「老板微信 xxx」「实际人均 80 不是 50」。
 
-```ts
-export const entryPrivate = pgTable('entry_private', {
-  entryId:   uuid('entry_id').primaryKey().references(() => entries.id, { onDelete: 'cascade' }),
-  rating:    smallint('rating'),               // 我的评分 1-5，可为空
-  status:    varchar('status', { length: 12 }), // todo 想去 | visited 去过 | verified 已验证 | avoid 踩雷
-  note:      text('note'),                     // 私人备注（多行）
-  contact:   varchar('contact', { length: 120 }), // 老板微信/电话等不公开联系方式
-  paid:      varchar('paid', { length: 60 }),  // 实际花费，如「人均 80」
-  visitedOn: date('visited_on'),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-})
-```
+表定义在 [`DATA-MODEL.md`](DATA-MODEL.md) 第 2.6 节（**那里是唯一的 schema 来源，不要在这里另写一份**）。
+字段语义：
+
+| 字段 | 用途 |
+|---|---|
+| `rating` | 我的评分 1-5 |
+| `status` | `todo` 想去 / `visited` 去过 / `verified` 已验证 / `avoid` 踩雷 |
+| `note` | 私人备注（多行） |
+| `contact` | 老板微信 / 电话等不公开联系方式 |
+| `paid` | 实际花费，如「人均 80」 |
+| `visitedOn` | 到访日期 `YYYY-MM-DD` |
 
 1:1 关系，只有 `/admin` 的编辑页和 `/me` 的详情页会读出它。
 **公开详情页那条查询里根本不会 join 这张表** —— 从源头上就拿不到。
@@ -244,7 +248,6 @@ export const entryPrivate = pgTable('entry_private', {
 | `submissionsOpen` | 投稿开关，关掉后 `/submit` 显示「暂停收稿」 | `true` |
 | `maintenanceMode` | 维护模式，前台显示公告页（站长仍可访问） | `false` |
 | `defaultVisibility` | 新建条目默认可见性 | `'public'` |
-| `adminPath` | 后台路径前缀，见下 | `'admin'` |
 
 ---
 
@@ -275,21 +278,41 @@ export const entryPrivate = pgTable('entry_private', {
 `/admin/imports` 导出的 JSON 含私密条目，**这个文件不要放公共网盘、不要提交到 Git**。
 在导出说明里写清楚。
 
+**⑦ 访问统计不能变成追踪**
+`/admin/analytics` 的访客数来自 `visit_daily`（见 [DATA-MODEL.md](DATA-MODEL.md) 2.9 / 4.5）。
+它是这套设计里唯一和「人」沾边的数据，所以边界写死在这里：
+
+| 存 | 不存 |
+|---|---|
+| `HMAC-SHA256(AUTH_SECRET, 'pv:{日期}:{IP}:{UA}')` 的前 32 位 | 原始 IP、原始 UA、任何设备指纹 |
+| 按天聚合的浏览数、路径、来源域名 | 明细访问日志、搜索词、完整 referrer URL |
+| —— | cookie、localStorage、第三方脚本 |
+
+盐里带日期，所以**跨天无法关联同一个人**；「近 7 天访客」是每天去重后相加，
+不是 7 天内的独立访客，页面上必须照这个说法写，不能含糊成「7 天有多少人」。
+站长自己登录后的访问全部不计入 —— 否则你每次刷新都在给自己刷数字。
+
 ---
 
 ## 七、部署加固（可选但便宜）
 
-**改掉后台路径。** `/admin` 和 `/login` 是扫描器必扫的路径。
-把 `adminPath` 做成环境变量 `ADMIN_PATH`（默认 `admin`），可以改成 `x7k2m` 这类无意义字符串。
-middleware 的 matcher 和 `requireAdmin()` 的重定向都读它。成本几乎为零，挡住大部分自动化扫描。
+**改掉后台路径（未实现 · 可选加固项）。** `/admin` 和 `/login` 是扫描器必扫的路径。
+把前缀做成可配置的（环境变量 `ADMIN_PATH`，默认 `admin`），换成 `x7k2m` 这类无意义字符串，
+能挡住大部分自动化扫描，成本几乎为零。
+
+> ⚠️ **目前没有这个功能。** `src/middleware.ts` 的 matcher 是**硬编码**的
+> `['/admin/:path*', '/admin', '/me/:path*', '/me']`，`requireAdmin()` 失败时也是写死跳 `/login`。
+> 要做的话得同时改这两处（`middleware.ts` 的 `config.matcher` 和 `auth.ts` 的重定向），
+> 另外别忘了后台里所有指向 `/admin/...` 的链接。
 
 **站长模式工具条要显眼。** 登录后前台顶部固定一条细窄的条（主色底 + 白字）：
 「站长模式 · 你正在看公开视图 · [进入 /me] [退出]」。
 不是为了好看 —— 是为了**防止你自己搞混**：以为在看全部内容，其实是公开视图，
 然后纳闷「我那条私密收藏怎么不见了」。
 
-**登录失败要限速。** `/login` 的 Server Action 里，同 IP 连续失败 5 次锁 15 分钟
-（在 `settings` 或内存里记一个计数）。单管理员账号尤其需要。
+**登录失败要限速（未实现 · 待办）。** 现在 `src/lib/auth.ts` 的 `authorize` 在邮箱或密码不匹配时
+只做了一件事：`await sleep(500)` —— **没有计数、没有锁定**，也就是说爆破只被拖慢，不会被挡住。
+单管理员账号尤其需要补：同 IP 连续失败 5 次锁 15 分钟（计数放 `settings` 表或进程内存）。
 
 ---
 
@@ -308,6 +331,8 @@ middleware 的 matcher 和 `requireAdmin()` 的重定向都读它。成本几乎
 - [ ] 站长在 `/me/tools` → 能看到全部三种可见性的条目
 - [ ] 把一条公开条目改成私密 → 前台 1 秒内消失，标签计数 -1，sitemap 里也没了
 - [ ] 单元测试：往库里插一条 `private`，所有 `getPublic*` 函数都拿不到它
+- [ ] 访问统计：无痕窗口看一次前台 → `/admin/analytics` 今日访客 +1；站长登录状态下再看 → 数字不动
+- [ ] 访问统计：`curl` 和 Googlebot 的 UA 各请求一次前台 → 数字不动（爬虫不进统计）
 
 最后一条写成自动化测试放进 `tests/privacy.test.ts`，跑在 CI 里。
 **这条测试比其它十条加起来都重要** —— 它是唯一能在你以后加新查询函数时自动报警的东西。

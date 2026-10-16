@@ -30,8 +30,16 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files（.env.example 要提交，本地实际配置不提交）
 .env*
+!.env.example
+
+# 运行时数据：数据库、上传的图片、备份 —— 永不随部署覆盖
+/data/
+
+# 发布暂存目录（deploy.py 每次重建）—— 不进仓库，也不参与 typecheck
+/dist-deploy/
+/dist-deploy.tar.gz
 
 # vercel
 .vercel
