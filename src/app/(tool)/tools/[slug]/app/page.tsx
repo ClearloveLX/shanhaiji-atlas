@@ -3,10 +3,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Info } from 'lucide-react';
+import MobileNav from '@/components/layout/MobileNav';
 import UsagePing from '@/components/tools/UsagePing';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPublicEntryBySlug } from '@/db/queries';
 import { trackPageView } from '@/lib/analytics';
+import { siteConfig } from '@/lib/site-config';
 import { isToolSlug, TOOL_REGISTRY } from '@/tools/registry';
 
 type PageProps = {
@@ -77,13 +79,17 @@ export default async function ToolAppPage({ params }: PageProps) {
             <h1 className="truncate text-sm font-medium">{entry.name}</h1>
           </div>
 
-          <Link
-            href={`/tools/${entry.slug}`}
-            className="flex shrink-0 items-center gap-1 rounded-full text-xs text-muted-foreground outline-none transition-colors duration-150 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/35"
-          >
-            <Info className="size-3.5" aria-hidden />
-            关于这个工具
-          </Link>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {/* 「关于这个工具」和左边的返回箭头指的是同一个页面，手机上只留箭头，位置让给菜单 */}
+            <Link
+              href={`/tools/${entry.slug}`}
+              className="hidden shrink-0 items-center gap-1 rounded-full text-xs text-muted-foreground outline-none transition-colors duration-150 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/35 sm:flex"
+            >
+              <Info className="size-3.5" aria-hidden />
+              关于这个工具
+            </Link>
+            <MobileNav items={siteConfig.nav} />
+          </div>
         </header>
 
         <main className="py-6">

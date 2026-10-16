@@ -152,18 +152,24 @@ export function seasonTerm(crop: Crop): string {
 }
 
 /**
- * 行标题写的是「收几次」而不是「一季 / 两季」——
- * 光看「两季」看不出为什么那一行有两个时刻，写「收两次」就跟下面的数据对上了。
+ * 这行会出现哪些成熟时刻，直接照游戏里的叫法写。
+ * 一季 →「第一季」；两季 →「第一季 + 第二季」。
+ * 不写「收一次 / 收两次」：那是我自己发明的说法，看不出跟下面两行是什么关系。
  */
+export function seasonRange(crop: Crop): string {
+  return crop.seasons === 1 ? '第一季' : '第一季 + 第二季';
+}
+
+/** 行标题只留时长，季数交给 seasonRange 说，免得标题里塞两件事 */
 export function cropName(crop: Crop): string {
-  return `${crop.baseMinutes / 60} 小时 · ${crop.seasons === 1 ? '收一次' : '收两次'}`;
+  return `${crop.baseMinutes / 60} 小时`;
 }
 
 /** 悬停时给完整解释，把游戏术语和实际行为连起来 */
 export function cropHint(crop: Crop): string {
   return crop.seasons === 1
-    ? '一季作物：种一次收一次，收完这块地就空出来，所以只有一个成熟时刻。'
-    : '两季作物：收完第一茬自己接着长第二茬，第二茬只要一半时间，所以有两个成熟时刻。';
+    ? '一季作物：只有第一季。第一季收完，这块地就空出来了，所以只有一个成熟时刻。'
+    : '两季作物：第一季收完，同一块地接着长第二季，第二季只要一半时间，所以有两个成熟时刻。';
 }
 
 /** 这块地上每一季实际要长多久：一季 →「8 小时」，两季 →「8 小时 + 4 小时」 */

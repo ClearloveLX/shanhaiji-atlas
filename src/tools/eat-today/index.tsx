@@ -214,13 +214,13 @@ export default function EatTodayTool() {
   return (
     <div className="flex flex-col gap-5">
       {/* ── 转盘 ─────────────────────────────── */}
-      <section className="surface topo relative overflow-hidden px-5 py-6 sm:px-7 sm:py-8">
+      <section className="surface topo relative overflow-hidden px-4 py-5 sm:px-7 sm:py-8">
         <span
           aria-hidden
           className="pointer-events-none absolute -top-28 -left-20 size-72 rounded-full bg-brand/10 blur-3xl"
         />
 
-        <div className="relative flex flex-col items-center gap-7 sm:flex-row sm:gap-9">
+        <div className="relative flex flex-col items-center gap-5 sm:flex-row sm:gap-9">
           <button
             type="button"
             onClick={spin}
@@ -230,7 +230,7 @@ export default function EatTodayTool() {
                 ? '清单是空的，转盘用不了'
                 : `转一个，从 ${items.length} 个选项里随机挑一个`
             }
-            className="relative size-44 shrink-0 rounded-full outline-none transition-transform duration-150 hover:scale-[1.02] focus-visible:ring-[3px] focus-visible:ring-ring/35 disabled:hover:scale-100 sm:size-48"
+            className="relative size-40 shrink-0 rounded-full outline-none transition-transform duration-150 hover:scale-[1.02] focus-visible:ring-[3px] focus-visible:ring-ring/35 disabled:hover:scale-100 sm:size-48"
           >
             <span
               aria-hidden
@@ -298,7 +298,7 @@ export default function EatTodayTool() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="mt-4"
+                className="mt-4 h-11 sm:h-8"
                 onClick={() => commit(items, null)}
               >
                 <X className="size-4" aria-hidden />
@@ -321,17 +321,35 @@ export default function EatTodayTool() {
           {defaults ? (
             <span className="text-xs text-muted-foreground">当前是默认清单</span>
           ) : confirmReset ? (
-            <span className="flex items-center gap-2">
+            <span className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-muted-foreground">会覆盖现在的清单</span>
-              <Button type="button" variant="destructive" size="sm" onClick={resetList}>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="h-11 sm:h-8"
+                onClick={resetList}
+              >
                 确认恢复
               </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmReset(false)}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-11 sm:h-8"
+                onClick={() => setConfirmReset(false)}
+              >
                 取消
               </Button>
             </span>
           ) : (
-            <Button type="button" variant="outline" size="sm" onClick={() => setConfirmReset(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-11 sm:h-8"
+              onClick={() => setConfirmReset(true)}
+            >
               <RotateCcw className="size-4" aria-hidden />
               恢复默认清单
             </Button>
@@ -354,10 +372,11 @@ export default function EatTodayTool() {
               }}
               maxLength={MAX_NAME_LENGTH}
               placeholder="想吃什么，加进来"
+              className="h-11 sm:h-9"
               aria-invalid={addError ? true : undefined}
               aria-describedby={addError ? 'food-new-error' : undefined}
             />
-            <Button type="submit" variant="outline" className="shrink-0">
+            <Button type="submit" variant="outline" className="h-11 shrink-0 sm:h-9">
               <Plus className="size-4" aria-hidden />
               添加
             </Button>
@@ -374,7 +393,7 @@ export default function EatTodayTool() {
             清单空了。加一个，或者点上面的「恢复默认清单」。
           </p>
         ) : (
-          <ul className="grid gap-2 sm:grid-cols-2">
+          <ul className="grid grid-cols-2 gap-2 lg:grid-cols-3">
             {items.map((item) => {
               const editing = editingId === item.id;
               const isLast = state.lastId === item.id;
@@ -383,7 +402,8 @@ export default function EatTodayTool() {
                 <li
                   key={item.id}
                   className={cn(
-                    'flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 py-1.5',
+                    editing ? 'col-span-2 lg:col-span-3' : '',
+                    'flex min-h-12 items-center gap-1 rounded-lg border border-border px-2.5 py-1 sm:min-h-11',
                     isLast ? 'border-brand/40 bg-brand-soft/60' : 'bg-background',
                   )}
                 >
@@ -412,14 +432,14 @@ export default function EatTodayTool() {
                         maxLength={MAX_NAME_LENGTH}
                         aria-invalid={editError ? true : undefined}
                         aria-describedby={editError ? 'food-edit-error' : undefined}
-                        className="h-8 flex-1 text-sm"
+                        className="h-10 flex-1 text-sm sm:h-8"
                       />
 
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="size-7 shrink-0 text-brand"
+                        className="size-9 shrink-0 text-brand sm:size-7"
                         onClick={saveEdit}
                         aria-label={`保存 ${item.name} 的修改`}
                       >
@@ -429,34 +449,50 @@ export default function EatTodayTool() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="size-7 shrink-0 text-muted-foreground"
+                        className="size-9 shrink-0 text-muted-foreground sm:size-7"
                         onClick={() => setEditingId(null)}
                         aria-label="放弃修改"
                       >
                         <X className="size-4" aria-hidden />
                       </Button>
+                      {/* 手机上删除收进编辑态：两颗图标挤在一格里，名字会被截成「黄焖鸡…」，
+                          而且小屏幕上删除键和名字挨着，很容易点错 */}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 shrink-0 text-destructive sm:hidden"
+                        onClick={() => removeItem(item.id)}
+                        aria-label={`删除 ${item.name}`}
+                      >
+                        <Trash2 className="size-4" aria-hidden />
+                      </Button>
                     </>
                   ) : (
                     <>
-                      <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
-
-                      {isLast ? <span className="shrink-0 text-xs text-brand">上次选的</span> : null}
-
-                      <Button
+                      {/* 整格就是「改名字」的按钮，名字才能占满整格不被截断（手机上一格只有 ~170px） */}
+                      <button
                         type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 shrink-0 text-muted-foreground"
                         onClick={() => startEdit(item)}
+                        className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1 py-1 text-left outline-none transition-colors duration-150 hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/35 active:opacity-60"
                         aria-label={`修改 ${item.name}`}
                       >
-                        <Pencil className="size-3.5" aria-hidden />
-                      </Button>
+                        <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
+                        <Pencil className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                      </button>
+
+                      {isLast ? (
+                        <>
+                          <span className="sr-only">上次选的</span>
+                          <span className="hidden shrink-0 text-xs text-brand lg:inline">上次选的</span>
+                        </>
+                      ) : null}
+
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="size-7 shrink-0 text-muted-foreground hover:text-destructive"
+                        className="hidden size-7 shrink-0 text-muted-foreground hover:text-destructive sm:inline-flex"
                         onClick={() => removeItem(item.id)}
                         aria-label={`删除 ${item.name}`}
                       >

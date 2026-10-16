@@ -28,6 +28,7 @@ import {
   planAll,
   readConfig,
   restBands,
+  seasonRange,
   selectedLandTypes,
   trackPercent,
   TRACK_SPAN_HOURS,
@@ -163,59 +164,61 @@ export default function FarmPlannerTool() {
           const Icon = CROP_ICONS[plan.crop.baseMinutes] ?? Sprout;
 
           return (
-            <li
-              key={plan.crop.id}
-              className="flex flex-col gap-2.5 py-3 sm:flex-row sm:items-center sm:gap-4"
-            >
-              <div className="flex min-w-0 items-center gap-2.5 sm:w-44 sm:shrink-0">
+            <li key={plan.crop.id} className="flex flex-col gap-1 py-3 sm:flex-row sm:gap-5">
+              <div className="flex min-w-0 items-center gap-2.5 sm:w-40 sm:shrink-0">
                 <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
                   <Icon className="size-4" aria-hidden />
                 </span>
-                <span className="truncate text-sm font-medium" title={cropHint(plan.crop)}>
-                  {plan.name}
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium" title={cropHint(plan.crop)}>
+                    {plan.name}
+                  </span>
+                  <span className="block truncate text-[11px] text-muted-foreground">
+                    {seasonRange(plan.crop)}
+                  </span>
                 </span>
               </div>
 
-              <ul className="flex flex-1 flex-wrap gap-1.5">
+              {/* 一块地一行：左边土地、中间成熟时刻、右边结论。
+                  手机上时刻会自己折行，不会再挤成参差不齐的小药丸 */}
+              <ul className="flex min-w-0 flex-1 flex-col divide-y divide-border/60">
                 {plan.lands.map((landPlan) => (
                   <li
                     key={landPlan.land.multiplier}
-                    className={cn(
-                      'flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs',
-                      landPlan.suitable
-                        ? 'border-border bg-background'
-                        : 'border-destructive/30 bg-destructive/5',
-                    )}
+                    className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 py-1.5 first:pt-0 last:pb-0"
                   >
-                    <span
-                      className={cn('size-1.5 shrink-0 rounded-full', landPlan.land.dot)}
-                      aria-hidden
-                    />
-                    <span className="shrink-0 text-muted-foreground">{landPlan.land.short}</span>
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span
+                        className={cn('size-1.5 shrink-0 rounded-full', landPlan.land.dot)}
+                        aria-hidden
+                      />
+                      {landPlan.land.short}
+                    </span>
 
-                    {plan.crop.seasons === 1 ? (
-                      <span className="tabular-nums">
-                        {formatCompactMaturity(landPlan.maturities[0].at, currentNow)}
-                      </span>
-                    ) : (
-                      // 两季就分两行写，把「第一季 / 第二季」标出来，别让人猜那个箭头
-                      <span className="flex flex-col leading-tight">
-                        {landPlan.maturities.map((maturity, index) => (
-                          <span key={maturity.season} className="flex items-baseline gap-1 whitespace-nowrap">
-                            <span className="text-[11px] text-muted-foreground">
-                              {index === 0 ? '第一季' : '第二季'}
-                            </span>
-                            <span className="tabular-nums">
-                              {formatCompactMaturity(maturity.at, currentNow)}
-                            </span>
+                    <span className="flex flex-wrap items-baseline gap-x-4 gap-y-0.5">
+                      {landPlan.maturities.map((maturity) => (
+                        <span
+                          key={maturity.season}
+                          className="flex items-baseline gap-1.5 whitespace-nowrap"
+                        >
+                          <span className="w-9 shrink-0 text-[11px] text-muted-foreground">
+                            {maturity.season === 1 ? '第一季' : '第二季'}
                           </span>
-                        ))}
-                      </span>
-                    )}
+                          <span
+                            className={cn(
+                              'num tabular-nums text-sm',
+                              maturity.inRest && 'text-destructive',
+                            )}
+                          >
+                            {formatCompactMaturity(maturity.at, currentNow)}
+                          </span>
+                        </span>
+                      ))}
+                    </span>
 
                     <span
                       className={cn(
-                        'shrink-0 font-medium',
+                        'shrink-0 text-xs font-medium',
                         landPlan.suitable ? 'text-brand' : 'text-destructive',
                       )}
                     >
@@ -256,6 +259,7 @@ export default function FarmPlannerTool() {
               type="button"
               variant="outline"
               size="sm"
+              className="h-10 sm:h-8"
               aria-expanded={settingsOpen}
               aria-controls="farm-settings"
               onClick={() => setSettingsOpen((open) => !open)}
@@ -284,11 +288,11 @@ export default function FarmPlannerTool() {
         </div>
 
         {lands.length > 0 ? (
-          <div className="relative mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-border pt-3">
-            <span className="num text-3xl leading-none font-semibold text-brand">
+          <div className="relative mt-4 flex items-baseline gap-3 border-t border-border pt-3">
+            <span className="num shrink-0 text-3xl leading-none font-semibold text-brand">
               {ready.length}
             </span>
-            <span className="text-sm">
+            <span className="min-w-0 text-sm leading-relaxed">
               种作物在 {lands.length} 种土地上都不会吵醒你
               {risky.length > 0 ? (
                 <span className="text-muted-foreground">，另外 {risky.length} 种会</span>
@@ -310,7 +314,7 @@ export default function FarmPlannerTool() {
                 id="rest-start"
                 value={config.restStart}
                 onChange={(event) => update({ restStart: Number(event.target.value) })}
-                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-[border-color,box-shadow] focus-visible:border-brand focus-visible:ring-[3px] focus-visible:ring-ring/30"
+                className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-[border-color,box-shadow] focus-visible:border-brand focus-visible:ring-[3px] focus-visible:ring-ring/30 sm:h-9"
               >
                 {HOURS.map((hour) => (
                   <option key={hour} value={hour}>
@@ -326,7 +330,7 @@ export default function FarmPlannerTool() {
                 id="rest-end"
                 value={config.restEnd}
                 onChange={(event) => update({ restEnd: Number(event.target.value) })}
-                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-[border-color,box-shadow] focus-visible:border-brand focus-visible:ring-[3px] focus-visible:ring-ring/30"
+                className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-[border-color,box-shadow] focus-visible:border-brand focus-visible:ring-[3px] focus-visible:ring-ring/30 sm:h-9"
               >
                 {HOURS.map((hour) => (
                   <option key={hour} value={hour}>
@@ -365,11 +369,23 @@ export default function FarmPlannerTool() {
           </fieldset>
 
           <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
-            <Button type="button" variant="outline" size="sm" onClick={() => setConfig(createDefaultConfig())}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-11 sm:h-8"
+              onClick={() => setConfig(createDefaultConfig())}
+            >
               <RotateCcw className="size-4" aria-hidden />
               恢复默认（00:00–06:00 · 三种土地）
             </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setSettingsOpen(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-11 sm:h-8"
+              onClick={() => setSettingsOpen(false)}
+            >
               收起
             </Button>
           </div>
@@ -388,15 +404,15 @@ export default function FarmPlannerTool() {
             <ul className="flex flex-col gap-1.5 text-xs leading-relaxed text-muted-foreground">
               <li className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="shrink-0 rounded-md bg-secondary px-1.5 py-0.5 font-medium text-foreground">
-                  一季 · 收一次
+                  第一季
                 </span>
-                <span>种下去收一次，这块地就空出来了 —— 只写一个成熟时刻</span>
+                <span>一季作物：只有第一季。第一季收完，这块地就空出来了，所以只有一个成熟时刻。</span>
               </li>
               <li className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="shrink-0 rounded-md bg-brand-soft px-1.5 py-0.5 font-medium text-brand">
-                  两季 · 收两次
+                  第一季 + 第二季
                 </span>
-                <span>收完第一季，同一块地自己接着长第二季（只要一半时间）—— 写两个时刻</span>
+                <span>两季作物：第一季收完，同一块地接着长第二季（只要一半时间），所以两个时刻都写。</span>
               </li>
             </ul>
           </section>
@@ -428,7 +444,7 @@ export default function FarmPlannerTool() {
                   会撞上休息时段的
                   <span className="num text-xs font-normal text-muted-foreground">{risky.length} 种</span>
                 </h2>
-                <p className="text-xs text-muted-foreground">标「不合适」的那块地，得半夜爬起来收</p>
+                <p className="text-xs text-muted-foreground">红字那个时刻会撞上休息时段，得半夜爬起来收</p>
               </div>
 
               {renderRows(risky, now)}

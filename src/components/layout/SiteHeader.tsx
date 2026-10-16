@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import AtlasMark from '@/components/layout/AtlasMark';
+import MobileNav from '@/components/layout/MobileNav';
 import NavLinks from '@/components/layout/NavLinks';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import CommandPalette, { type PaletteTag } from '@/components/search/CommandPalette';
@@ -35,6 +36,7 @@ export default function SiteHeader({ tags }: { tags: PaletteTag[] }) {
           >
             推荐收录
           </Link>
+          <MobileNav items={siteConfig.nav} />
         </div>
       </div>
     </header>
