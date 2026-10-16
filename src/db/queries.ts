@@ -234,6 +234,21 @@ function buildEntryConditions(query: EntryQuery, visibility: string | null): SQL
   return conditions;
 }
 
+/** 手动排序时先按类型分组，顺序和前台导航一致：工具 → 站点 → 店铺 */
+const manualTypeRank = sql`case ${entries.type} when 'tool' then 0 when 'site' then 1 when 'shop' then 2 else 3 end`;
+
+/**
+ * **权威顺序**：站长在后台用拖动 / ↑↓ 调出来的那一份，全站只有这一套定义。
+ *
+ * 先按类型分组（工具 → 站点 → 店铺），组内 `sort_weight` 从大到小；
+ * 没调过的都是 0，退回按收录时间排，所以不调就和以前一样。
+ * 后台列表、前台各列表、以及首页「编辑精选」，全都走这里 ——
+ * 精选只是从这份顺序里筛出来的一个子集，不另排一套。
+ */
+function manualOrder() {
+  return [manualTypeRank, desc(entries.sortWeight), desc(entries.createdAt)];
+}
+
 function orderByFor(sort: EntrySort | undefined, dir: 'asc' | 'desc' = 'desc') {
   const order = dir === 'asc' ? asc : desc;
 
@@ -241,16 +256,15 @@ function orderByFor(sort: EntrySort | undefined, dir: 'asc' | 'desc' = 'desc') {
     case 'name':
       return [order(entries.name)];
     case 'featured':
-      return [desc(entries.featured), desc(entries.sortWeight), desc(entries.createdAt)];
+      // 精选优先：精选的排前面，组内仍然是权威顺序
+      return [desc(entries.featured), ...manualOrder()];
     case 'updated':
       return [order(entries.updatedAt)];
     case 'newest':
       return [order(entries.createdAt)];
     case 'manual':
     default:
-      // 站长在后台用 ↑↓ 调出来的顺序（sort_weight 越大越靠前）；
-      // 没调过的都是 0，退回按收录时间排，所以不调就和以前一样
-      return [desc(entries.sortWeight), desc(entries.createdAt)];
+      return manualOrder();
   }
 }
 
@@ -368,7 +382,8 @@ const getPublicFeaturedCached = withCache(
       .select()
       .from(entries)
       .where(and(isNull(entries.deletedAt), eq(entries.visibility, 'public'), eq(entries.featured, true)))
-      .orderBy(desc(entries.sortWeight), desc(entries.createdAt))
+      // 精选区 = 权威顺序里筛出精选那几条，所以顺序和后台默认列表完全一致
+      .orderBy(...manualOrder())
       .limit(limit)
       .all();
     return attachTags(rows);
@@ -777,13 +792,8 @@ export async function getAdminEntries(query: EntryQuery = {}): Promise<Paged<Ent
   const totalRow = db.select({ count: sql<number>`count(*)` }).from(entries).where(where).get();
   const total = totalRow?.count ?? 0;
 
-  // 手动排序时先按类型分组（顺序和前台导航一致：工具 → 站点 → 店铺），
-  // 一屏之内就能看出 /tools、/sites、/shops 各自的顺序
-  const order = orderByFor(query.sort, query.dir);
-  const orderBy =
-    query.sort === 'manual'
-      ? [sql`case ${entries.type} when 'tool' then 0 when 'site' then 1 when 'shop' then 2 else 3 end`, ...order]
-      : order;
+  // 手动排序 = 权威顺序（类型分组 + sort_weight），orderByFor 里已经带上类型分组
+  const orderBy = orderByFor(query.sort, query.dir);
 
   const rows = db
     .select()

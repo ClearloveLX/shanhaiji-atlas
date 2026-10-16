@@ -201,6 +201,18 @@ export default function EntryTable({
         },
       },
       {
+        key: 'featured',
+        // 紧挨着序号：顺序是主、精选是从 —— 先看它排第几，再决定要不要标精选
+        header: (
+          <span title="这里只决定「收不收进首页精选」；首页精选区就是按左侧序号这份顺序展示的，不另排一套">
+            精选
+          </span>
+        ),
+        sortable: true,
+        align: 'center',
+        render: (row) => <FeaturedToggle id={row.id} featured={row.featured} name={row.name} />,
+      },
+      {
         key: 'name',
         header: '名称',
         sortable: true,
@@ -282,13 +294,6 @@ export default function EntryTable({
               {row.visibility === 'private' ? '私密' : '不列出'}
             </span>
           ),
-      },
-      {
-        key: 'featured',
-        header: '精选',
-        sortable: true,
-        align: 'center',
-        render: (row) => <FeaturedToggle id={row.id} featured={row.featured} name={row.name} />,
       },
       {
         key: 'clicks',
@@ -379,6 +384,7 @@ export default function EntryTable({
         <p className="mb-2 text-xs text-neutral-500">
           按住任意一行上下拖动就能调顺序，只能在同一类（工具 / 站点 / 店铺）里拖 ——
           它对应的是前台 /tools、/sites、/shops 三个列表各自的顺序，松手立刻生效。
+          首页的「编辑精选」不是另排一套，就是这份顺序里筛出标了精选的那几条，所以这里的顺序就是精选区的顺序。
           键盘选中左侧序号后按 ↑↓ 也能微调。点击 / 浏览只是给你看的参考，不会自动影响顺序。
         </p>
       ) : null}
