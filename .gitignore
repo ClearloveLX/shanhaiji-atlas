@@ -41,6 +41,12 @@ yarn-error.log*
 /dist-deploy/
 /dist-deploy.tar.gz
 
+# 临时排查脚本。查一次库、跑一次 SQL 就写一个扔在根目录，
+# 不挡住的话下次谁 `git add -A` 就顺手带进仓库了。
+.tmp-*
+/tmp-*
+/*-scratch.*
+
 # vercel
 .vercel
 

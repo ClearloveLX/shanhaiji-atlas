@@ -2,6 +2,12 @@
   "name": "shanhaiji-atlas",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ClearloveLX/shanhaiji-atlas.git"
+  },
+  "description": "山海集 Atlas —— 可持续维护的生活导航站（工具 / 站点 / 好店，按多维度标签组织）",
   "scripts": {
     "dev": "next dev -p 4000",
     "build": "next build",
