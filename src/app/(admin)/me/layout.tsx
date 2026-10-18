@@ -12,9 +12,10 @@ export default async function MeLayout({ children }: { children: React.ReactNode
 
   const nav = [
     { href: '/me', label: '私藏首页' },
-    { href: '/me/tools', label: '工具' },
-    { href: '/me/sites', label: '站点' },
-    { href: '/me/shops', label: '店铺' },
+    { href: '/me/tools', label: '工具分享' },
+    { href: '/me/sites', label: '站点分享' },
+    { href: '/me/codes', label: '源码分享' },
+    { href: '/me/shops', label: '好店分享' },
     { href: '/me/notes', label: '笔记' },
     { href: '/me/search', label: '全量搜索' },
     { href: '/me/settings', label: '设置' },

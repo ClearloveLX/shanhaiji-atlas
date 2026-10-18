@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import EntryForm from '@/components/admin/EntryForm';
 import { getAdminAllTags, getAdminSubmissionById, getSiteSettings } from '@/db/queries';
 import { requireAdmin } from '@/lib/auth';
-import { buildEmptyEntryFormValues } from '@/lib/entries';
+import { asEntryType, buildEmptyEntryFormValues } from '@/lib/entries';
 import { listToolComponents } from '@/tools/registry';
 
 export const metadata: Metadata = {
@@ -45,7 +45,7 @@ export default async function AdminEntryNewPage({
     if (submission.url) {
       defaultValues.url = submission.url;
       defaultValues.linkMode = 'external';
-      defaultValues.type = submission.type === 'site' || submission.type === 'shop' ? submission.type : 'tool';
+      defaultValues.type = asEntryType(submission.type ?? '');
     }
     defaultValues.name = submission.name;
     defaultValues.summary = submission.reason ?? '';

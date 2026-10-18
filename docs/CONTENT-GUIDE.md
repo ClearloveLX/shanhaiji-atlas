@@ -232,7 +232,7 @@ select
 
 ---
 
-## 七、三个正例
+## 七、四个正例
 
 ### 正例 1 · 外部工具（`type=tool` + `link_mode=external`）
 
@@ -289,7 +289,25 @@ tags      type=tool · scene=create,work · platform=web · attr=free,no-login,n
           （共 7 个，scene 2 个）
 ```
 
-三条正例的共同点：`summary` 都能一句话说清「是什么 + 适合谁」；
+### 正例 4 · 源码分享（`type=code` + `link_mode=external`）
+
+```
+name      shadcn/ui
+slug      shadcn-ui
+summary   能直接拷进项目的 React 组件源码，不是装一个包就完事，改样式不用跟库的作者较劲；
+          适合想自己掌控 UI 层的中小项目。
+note      Tailwind 项目里最省事的起点：想要哪个组件就拷哪个，代码在仓库里，升级不会把改动冲掉。
+          收录是因为它的源码本身就是文档，读一遍就知道该抄哪段。
+url       https://ui.shadcn.com/       ← 前台只通过 /go/shadcn-ui 跳出去
+tags      type=code · scene=create,work · platform=web · price=free · attr=maintained
+          （共 6 个，scene 2 个）
+```
+
+> **源码分享和工具分享怎么分**：能用起来、要用它解决问题的进工具；主要是**读和抄代码**的
+> （组件库、模板、脚手架、示例工程）进源码分享。仓库里同时挂着在线 Demo 的，看你想让访客先做什么。
+> 两种情况都是 `link_mode=external`，前台都走 `/go/{slug}`，只是进 `/tools` 还是 `/codes` 的区别。
+
+四条正例的共同点：`summary` 都能一句话说清「是什么 + 适合谁」；
 `note` 都能看出**自己真的用过**；标签都在 3-8 个、`scene` 都在 3 个以内；
 没有一条打了 `editor-pick` —— 那是要攒够 3 个月才给的东西。
 

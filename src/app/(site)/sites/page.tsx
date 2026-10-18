@@ -7,7 +7,7 @@ import { parseListQuery } from '@/lib/list-params';
 import { listTitle } from '@/lib/tags';
 
 export const metadata: Metadata = {
-  title: '常用站点',
+  title: '站点分享',
   description: '值得放进收藏夹的站点：内容社区、查询工具、生活服务，按场景和属性筛。',
   alternates: { canonical: '/sites' },
 };

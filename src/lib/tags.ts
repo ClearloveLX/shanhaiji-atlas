@@ -32,15 +32,18 @@ export const MAX_TAGS_PER_DIM: Record<TagDim, number> = {
   quality: 2,
 };
 
+/** 条目类型 → 中文名。列表页标题、面包屑、搜索结果分组、后台类型列共用这一份 */
 export const ENTRY_TYPE_LABELS: Record<string, string> = {
-  tool: '工具',
-  site: '站点',
-  shop: '店铺',
+  tool: '工具分享',
+  site: '站点分享',
+  code: '源码分享',
+  shop: '好店分享',
 };
 
 export const LINK_MODE_LABELS: Record<string, string> = {
   external: '外部链接',
-  internal: '自研工具',
+  // 「基本自研」是梗：全自研的口气太重，留一点余量给 Next.js / SQLite / Tailwind
+  internal: '基本自研',
   place: '线下好店',
 };
 
@@ -127,17 +130,21 @@ export function groupByDim<T extends Pick<Tag, 'dim'>>(items: T[]): Map<string, 
 }
 
 /** 条目类型 → 详情页/列表页路径段 */
+const TYPE_SEGMENTS: Record<string, string> = {
+  tool: 'tools',
+  site: 'sites',
+  code: 'codes',
+  shop: 'shops',
+};
+
 export function listSegment(type: string): string {
-  if (type === 'site') return 'sites';
-  if (type === 'shop') return 'shops';
-  return 'tools';
+  return TYPE_SEGMENTS[type] ?? 'tools';
 }
 
 /** 条目类型 → 中文标签（列表页标题用） */
 export function listTitle(type: string): string {
-  if (type === 'site') return '常用站点';
-  if (type === 'shop') return '推荐店铺';
-  return '在线工具';
+  // 不叫「在线工具」：这一类里也有软件官网（下载页、桌面版），不是都能在浏览器里直接用
+  return ENTRY_TYPE_LABELS[type] ?? type;
 }
 
 export type { EntryStatus, EntryType, LinkMode };

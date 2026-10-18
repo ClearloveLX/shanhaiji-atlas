@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { ArrowRight, Database, Store, Tags as TagsIcon } from 'lucide-react';
+import type { CSSProperties } from 'react';
+import { ArrowRight, CodeXml, Database, Store, Tags as TagsIcon } from 'lucide-react';
 import EntryCard from '@/components/card/EntryCard';
 import EntryGrid from '@/components/card/EntryGrid';
 import JsonLd from '@/components/layout/JsonLd';
@@ -68,15 +69,17 @@ export default async function HomePage() {
   const tagTotal = tagCounts.filter((tag) => tag.count > 0).length;
 
   const entrances = [
-    { type: 'tool', icon: Database, description: '能直接解决问题的在线工具' },
+    { type: 'tool', icon: Database, description: '在线能用的工具，与软件官网' },
     { type: 'site', icon: TagsIcon, description: '常去的站点，省得每次重新找' },
+    { type: 'code', icon: CodeXml, description: '开源项目与能直接抄的源码' },
     { type: 'shop', icon: Store, description: '线上店与线下实体店' },
   ];
 
   const stats = [
-    { label: '在线工具', value: countOf('tool'), href: '/tools' },
-    { label: '常用站点', value: countOf('site'), href: '/sites' },
-    { label: '推荐店铺', value: countOf('shop'), href: '/shops' },
+    { label: '工具分享', value: countOf('tool'), href: '/tools' },
+    { label: '站点分享', value: countOf('site'), href: '/sites' },
+    { label: '源码分享', value: countOf('code'), href: '/codes' },
+    { label: '好店分享', value: countOf('shop'), href: '/shops' },
     { label: '在用标签', value: tagTotal, href: '/tags' },
   ];
 
@@ -89,40 +92,49 @@ export default async function HomePage() {
         <div aria-hidden className="halo" />
         <div aria-hidden className="topo topo-fade absolute inset-0" />
 
-        <div className="shell relative pb-16 pt-20 sm:pb-20 sm:pt-28">
-          <p className="eyebrow">收录索引 · 人工筛选</p>
+        {/* 宽屏时左右分栏：左边站名 + 搜索，右边四个数字。
+            单栏排的话右半边整块空着，hero 又高到把「编辑精选」顶出首屏 */}
+        <div className="shell relative grid gap-8 pb-10 pt-12 sm:pb-12 sm:pt-14 lg:grid-cols-[minmax(0,1fr)_32rem] lg:items-center lg:gap-12">
+          <div className="min-w-0">
+            <p className="eyebrow">收录索引 · 人工筛选</p>
 
-          <h1 className="mt-7 text-5xl font-semibold leading-[1.06] sm:text-7xl">
-            {siteConfig.name}
-            <span className="ml-3 font-normal text-muted-foreground/60 sm:ml-5">{siteConfig.nameEn}</span>
-          </h1>
+            <h1 className="mt-4 text-4xl font-semibold leading-[1.06] sm:text-6xl">
+              {siteConfig.name}
+              <span className="ml-3 font-normal text-muted-foreground/60 sm:ml-4">{siteConfig.nameEn}</span>
+            </h1>
 
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">{siteConfig.slogan}</p>
+            <p className="mt-3.5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              {siteConfig.slogan}
+            </p>
 
-          <div className="mt-10 max-w-2xl">
-            <SearchBox className="w-full" size="lg" placeholder="搜索工具、站点、店铺" />
+            <div className="mt-6 max-w-xl">
+              <SearchBox className="w-full" size="lg" placeholder="搜索工具、站点、源码、好店" />
+            </div>
           </div>
 
-          <div className="mt-12 grid max-w-3xl grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-4">
-            {stats.map((stat) => (
-              <Link
-                key={stat.label}
-                href={stat.href}
-                className="group flex flex-col gap-1 bg-background px-4 py-4 transition-colors duration-150 hover:bg-accent"
-              >
-                <span className="num text-2xl font-medium">{stat.value}</span>
-                <span className="text-xs text-muted-foreground">{stat.label}</span>
-              </Link>
-            ))}
-          </div>
+          <div className="flex flex-col gap-2.5">
+            {/* 五个数字一行铺满：手机两列时最后一项跨两列，不留灰格 */}
+            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-5">
+              {stats.map((stat) => (
+                <Link
+                  key={stat.label}
+                  href={stat.href}
+                  className="group flex flex-col gap-0.5 bg-background px-4 py-3 transition-colors duration-150 last:col-span-2 hover:bg-accent sm:last:col-span-1"
+                >
+                  <span className="num text-2xl font-medium">{stat.value}</span>
+                  <span className="text-xs text-muted-foreground">{stat.label}</span>
+                </Link>
+              ))}
+            </div>
 
-          <p className="mt-6 text-sm text-muted-foreground">
-            已收录 <span className="num text-foreground">{totalEntries}</span> 条，按场景与属性标注标签，便于逐层缩小范围。
-          </p>
+            <p className="text-sm text-muted-foreground">
+              已收录 <span className="num text-foreground">{totalEntries}</span> 条，按场景与属性标注标签，便于逐层缩小范围。
+            </p>
+          </div>
         </div>
       </section>
 
-      <div className="shell py-16 sm:py-20">
+      <div className="shell py-10 sm:py-14">
         {/* 编辑精选 */}
         {featured.length > 0 ? (
           <section aria-labelledby="featured-heading">
@@ -153,9 +165,9 @@ export default async function HomePage() {
           </section>
         ) : null}
 
-        {/* 三个入口大卡 */}
+        {/* 四个入口大卡 */}
         <section className="mt-16" aria-label="分类入口">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {entrances.map((entrance) => {
               const Icon = entrance.icon;
               return (
@@ -182,24 +194,33 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* 按场景逛：做成书末索引的样子 */}
+        {/* 按场景逛：一排胶囊。
+            原来铺三列「书名索引」（名字—虚线—计数），7 个标签填不满三列，
+            最后一格豁一块，虚线又长得把名字和数字拉散了 */}
         {sceneTags.length > 0 ? (
           <section className="mt-16" aria-labelledby="scenes-heading">
             <SectionHead id="scenes-heading" index="02" title="按场景逛" hint="从用途出发" />
 
-            <div className="mt-2 grid gap-x-14 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="mt-5 flex flex-wrap gap-2">
               {sceneTags.map((tag) => (
-                <Link
-                  key={tag.id}
-                  href={`/tags/scene/${tag.slug}`}
-                  className="group flex items-baseline gap-3 border-b border-border py-3.5 transition-colors duration-150"
-                >
-                  <span className="text-sm transition-colors duration-150 group-hover:text-brand">{tag.name}</span>
-                  <span aria-hidden className="h-px flex-1 translate-y-[-3px] border-b border-dashed border-border" />
-                  <span className="num min-w-6 text-right text-xs text-muted-foreground">{tag.count}</span>
-                </Link>
+                <li key={tag.id}>
+                  <Link
+                    href={`/tags/scene/${tag.slug}`}
+                    className="group inline-flex items-center gap-2 rounded-full border border-border bg-background py-2 pl-3.5 pr-2.5 text-sm transition-colors duration-150 hover:border-brand/40 hover:bg-brand-soft"
+                  >
+                    <span
+                      aria-hidden
+                      className="tag-dot size-2 rounded-full"
+                      style={{ '--tint': tag.color } as CSSProperties}
+                    />
+                    {tag.name}
+                    <span className="num rounded-full bg-secondary px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors duration-150 group-hover:bg-background group-hover:text-brand">
+                      {tag.count}
+                    </span>
+                  </Link>
+                </li>
               ))}
-            </div>
+            </ul>
           </section>
         ) : null}
 

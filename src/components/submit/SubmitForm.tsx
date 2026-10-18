@@ -124,9 +124,10 @@ export default function SubmitForm({ captcha }: { captcha: { a: number; b: numbe
             <Label htmlFor="submit-type">类型</Label>
             <select id="submit-type" name="type" className={SELECT_CLASS} defaultValue="">
               <option value="">不确定</option>
-              <option value="tool">工具</option>
-              <option value="site">站点</option>
-              <option value="shop">店铺</option>
+              <option value="tool">工具分享</option>
+              <option value="site">站点分享</option>
+              <option value="code">源码分享</option>
+              <option value="shop">好店分享</option>
             </select>
           </div>
 

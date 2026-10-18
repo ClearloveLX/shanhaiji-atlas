@@ -29,7 +29,7 @@ export const EMPTY_BRANCH: BranchInput = {
 };
 
 export function asEntryType(value: string): EntryType {
-  return value === 'site' || value === 'shop' ? value : 'tool';
+  return value === 'site' || value === 'code' || value === 'shop' ? value : 'tool';
 }
 
 export function asLinkMode(value: string): LinkMode {

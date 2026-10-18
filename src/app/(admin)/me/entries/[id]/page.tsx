@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getAdminEntryById } from '@/db/queries';
 import { requireAdmin } from '@/lib/auth';
-import { sortChips } from '@/lib/tags';
+import { listSegment, sortChips } from '@/lib/tags';
 import { formatDate } from '@/lib/utils';
 
 export const metadata: Metadata = { title: '站长区 · 条目详情', robots: { index: false, follow: false } };
@@ -53,7 +53,7 @@ export default async function MeEntryDetailPage({ params }: { params: Promise<{ 
           {entry.visibility === 'public' ? (
             <Button asChild variant="outline" size="sm">
               <Link
-                href={`/${entry.type === 'site' ? 'sites' : entry.type === 'shop' ? 'shops' : 'tools'}/${entry.slug}`}
+                href={`/${listSegment(entry.type)}/${entry.slug}`}
                 target="_blank"
                 rel="noopener"
               >

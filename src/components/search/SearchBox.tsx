@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
  */
 export default function SearchBox({
   className,
-  placeholder = '搜工具、站点、店铺',
+  placeholder = '搜工具、站点、源码、好店',
   size = 'sm',
   id,
   showHotkeyHint = false,

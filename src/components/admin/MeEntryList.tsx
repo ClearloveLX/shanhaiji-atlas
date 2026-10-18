@@ -1,9 +1,8 @@
 import type { EntryWithTags } from '@/db/queries';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ENTRY_TYPE_LABELS } from '@/lib/tags';
 import { colorFromName, formatRelative, initialOf } from '@/lib/utils';
-
-const TYPE_LABELS: Record<string, string> = { tool: '工具', site: '站点', shop: '店铺' };
 
 const VISIBILITY_LABELS: Record<string, string> = {
   public: '公开',
@@ -44,7 +43,7 @@ export default function MeEntryList({ entries }: { entries: EntryWithTags[] }) {
               <div className="min-w-0 flex-1">
                 <p className="flex flex-wrap items-center gap-1.5">
                   <span className="truncate font-medium">{entry.name}</span>
-                  <span className="text-[11px] text-neutral-400">{TYPE_LABELS[entry.type] ?? entry.type}</span>
+                  <span className="text-[11px] text-neutral-400">{ENTRY_TYPE_LABELS[entry.type] ?? entry.type}</span>
                   {entry.visibility !== 'public' ? (
                     <span
                       className={

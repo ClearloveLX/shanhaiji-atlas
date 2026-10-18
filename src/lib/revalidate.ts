@@ -9,6 +9,7 @@ import { CACHE_TAG_ENTRIES, CACHE_TAG_TAGS } from '@/db/queries';
 const TYPE_SEGMENTS: Record<string, string> = {
   tool: 'tools',
   site: 'sites',
+  code: 'codes',
   shop: 'shops',
 };
 
@@ -69,7 +70,7 @@ export function revalidateTagPaths(tag: { dim: string; slug: string }): void {
 
 /** 批量操作 / 导入之后调用：全部列表页和聚合页一起刷 */
 export function revalidateSiteWide(): void {
-  for (const path of ['/', '/tools', '/sites', '/shops', '/tags', '/search']) {
+  for (const path of ['/', '/tools', '/sites', '/codes', '/shops', '/tags', '/search']) {
     revalidatePath(path, 'page');
   }
   revalidatePath('/sitemap.xml');

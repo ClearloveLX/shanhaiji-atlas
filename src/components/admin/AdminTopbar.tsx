@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ExternalLink } from 'lucide-react';
+import { useBreadcrumbName } from '@/components/admin/BreadcrumbName';
 
 const LABELS: Record<string, string> = {
   admin: '后台',
@@ -19,14 +20,23 @@ const LABELS: Record<string, string> = {
   clicks: '点击统计',
 };
 
-function useBreadcrumb(pathname: string): string[] {
+/** 形如 a648fc32-239d-4654-adf7-c949433074a1：数据库主键，不该出现在面包屑上 */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function useBreadcrumb(pathname: string, name: string | null): string[] {
   const segments = pathname.split('/').filter(Boolean);
-  return segments.map((segment) => LABELS[segment] ?? decodeURIComponent(segment));
+
+  return segments.map((segment) => {
+    if (LABELS[segment]) return LABELS[segment];
+    if (UUID_PATTERN.test(segment)) return name ?? '条目';
+    return decodeURIComponent(segment);
+  });
 }
 
 export default function AdminTopbar() {
   const pathname = usePathname();
-  const crumbs = useBreadcrumb(pathname);
+  const name = useBreadcrumbName();
+  const crumbs = useBreadcrumb(pathname, name);
 
   return (
     <header className="sticky top-0 z-10 hidden h-14 items-center justify-between border-b border-neutral-200 bg-white/95 px-6 backdrop-blur lg:flex">

@@ -5,7 +5,6 @@ import { db } from '@/db';
 import { entries, entryBranches, entryPrivate, entryQrcodes, entryTags, entryTools, tags } from '@/db/schema';
 import { requireAdmin } from '@/lib/auth';
 import { revalidateEntryPaths, revalidateSiteWide } from '@/lib/revalidate';
-import { ENTRY_TYPE_LABELS } from '@/lib/tags';
 import { deleteIfUnused } from '@/lib/upload-gc';
 import { entryInputSchema } from '@/lib/validation';
 import { isToolSlug } from '@/tools/registry';
@@ -227,14 +226,14 @@ function entryValues(input: EntryInput) {
 
 /**
  * 手动排序里权重 0 表示「没排过」。
- * 新建时留 0 的条目自动排到同类型最前面（= 以前「最新收录」的观感），
+ * 新建时留 0 的条目自动排到**整条列表最前面**（= 以前「最新收录」的观感），
  * 否则第一次调完顺序之后，新条目会掉到列表最后。
  */
-function nextTopWeight(type: string): number {
+function nextTopWeight(): number {
   const row = db
     .select({ max: sql<number>`max(${entries.sortWeight})` })
     .from(entries)
-    .where(and(eq(entries.type, type), isNull(entries.deletedAt)))
+    .where(isNull(entries.deletedAt))
     .get();
 
   return (row?.max ?? 0) + 10;
@@ -260,7 +259,7 @@ export async function createEntry(input: unknown): Promise<ActionResult<{ id: st
     return { ok: false, error: `slug「${data.slug}」已被占用，请换一个` };
   }
 
-  const sortWeight = data.sortWeight === 0 ? nextTopWeight(data.type) : data.sortWeight;
+  const sortWeight = data.sortWeight === 0 ? nextTopWeight() : data.sortWeight;
 
   let created = '';
 
@@ -420,11 +419,11 @@ export async function setStatus(id: string, status: EntryStatus): Promise<Action
 /**
  * 上移 / 下移一位。
  *
- * 顺序存在 `entries.sort_weight`（越大越靠前），作用范围是**同类型**——
- * 前台 /tools、/sites、/shops 三个列表各按类型展示，顺序也各管各的。
+ * 顺序存在 `entries.sort_weight`（越大越靠前），**全站一条队列**：工具、站点、店铺
+ * 不再按类型分组，拖到哪就是哪。前台 /tools、/sites、/shops 只是从这条队列里各取一段。
  *
  * 为什么每次先整体重排：没调过的条目权重都是 0，两个 0 互换等于没动。
- * 所以先把这一组按当前顺序写成 10 的倍数（顺序不变，只是变成互不相同的数），
+ * 所以先把整条队列按当前顺序写成 10 的倍数（顺序不变，只是变成互不相同的数），
  * 再交换目标与邻居，并且只写真正变化的行。
  * 不动 `updated_at` —— 调顺序不是内容改动，不该把「按更新时间」的列表搅乱。
  */
@@ -437,12 +436,10 @@ export async function moveEntry(
   const current = db.select().from(entries).where(eq(entries.id, id)).get();
   if (!current) return { ok: false, error: '条目不存在' };
 
-  const groupLabel = ENTRY_TYPE_LABELS[current.type] ?? current.type;
-
   const siblings = db
     .select({ id: entries.id, sortWeight: entries.sortWeight })
     .from(entries)
-    .where(and(eq(entries.type, current.type), isNull(entries.deletedAt)))
+    .where(isNull(entries.deletedAt))
     .orderBy(desc(entries.sortWeight), desc(entries.createdAt))
     .all();
 
@@ -450,8 +447,8 @@ export async function moveEntry(
   if (index < 0) return { ok: false, error: '条目不存在' };
 
   const target = direction === 'up' ? index - 1 : index + 1;
-  if (target < 0) return { ok: false, error: `「${current.name}」已经是${groupLabel}里的第一条` };
-  if (target >= siblings.length) return { ok: false, error: `「${current.name}」已经是${groupLabel}里的最后一条` };
+  if (target < 0) return { ok: false, error: `「${current.name}」已经在最前面了` };
+  if (target >= siblings.length) return { ok: false, error: `「${current.name}」已经在最后面了` };
 
   const ordered = [...siblings];
   [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
@@ -474,7 +471,8 @@ export async function moveEntry(
 /**
  * 拖动排序：把 `id` 放到 `targetId` 的前面 / 后面。
  *
- * 和 moveEntry 共用同一套权重规则（越大越靠前、同类型内部、整体重排）。
+ * 和 moveEntry 共用同一套权重规则（越大越靠前、全站一条队列、整体重排），
+ * **可以跨类型拖**：工具拖到站点前面是允许的，前台四个列表各取自己那一段。
  * 为什么按「相对谁」而不是「第几位」来传参：后台可能正带着筛选条件，
  * 界面上看到的行号跟真实名次对不上，用邻居定位就不会错位。
  */
@@ -489,14 +487,11 @@ export async function reorderEntry(
   const target = db.select().from(entries).where(eq(entries.id, targetId)).get();
 
   if (!current || !target) return { ok: false, error: '条目不存在' };
-  if (current.type !== target.type) {
-    return { ok: false, error: `${ENTRY_TYPE_LABELS[current.type] ?? current.type}只能排在同类里，不能拖到别的类型下面` };
-  }
 
   const siblings = db
     .select({ id: entries.id, sortWeight: entries.sortWeight })
     .from(entries)
-    .where(and(eq(entries.type, current.type), isNull(entries.deletedAt)))
+    .where(isNull(entries.deletedAt))
     .orderBy(desc(entries.sortWeight), desc(entries.createdAt))
     .all();
 

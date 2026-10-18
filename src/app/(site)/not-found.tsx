@@ -15,7 +15,7 @@ export default function SiteNotFound() {
         <label htmlFor="not-found-q" className="sr-only">
           搜索收录
         </label>
-        <Input autoComplete="off" spellCheck={false} id="not-found-q" name="q" placeholder="搜工具、站点、店铺" className="rounded-full" />
+        <Input autoComplete="off" spellCheck={false} id="not-found-q" name="q" placeholder="搜工具、站点、源码、好店" className="rounded-full" />
         <Button type="submit">搜索</Button>
       </form>
 

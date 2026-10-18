@@ -31,12 +31,12 @@ const LINK_MODE_CARDS = [
   {
     value: 'external' as const,
     title: '外部链接',
-    description: '推荐一个别人做的东西：网站、在线工具、网店',
+    description: '推荐一个别人做的东西：网站、在线工具、软件官网、网店',
   },
   {
     value: 'internal' as const,
-    title: '自研工具',
-    description: '自己做的工具，跑在站内 /tools/{slug}/app',
+    title: '基本自研',
+    description: '自己写的工具，跑在站内 /tools/{slug}/app（框架和库是别人的，代码基本上是自己的）',
   },
   {
     value: 'place' as const,
@@ -92,9 +92,10 @@ export default function EntryForm({
 
   const typeOptions = useMemo(
     () => [
-      { value: 'tool' as const, label: '工具' },
-      { value: 'site' as const, label: '站点' },
-      { value: 'shop' as const, label: '店铺' },
+      { value: 'tool' as const, label: '工具分享' },
+      { value: 'site' as const, label: '站点分享' },
+      { value: 'code' as const, label: '源码分享' },
+      { value: 'shop' as const, label: '好店分享' },
     ],
     [],
   );
@@ -230,7 +231,7 @@ export default function EntryForm({
                         </Button>
                       ))}
                     </div>
-                    <FormDescription>类型决定进哪个列表（工具 / 站点 / 店铺），和形态是两件事。</FormDescription>
+                    <FormDescription>类型决定进哪个列表（工具 / 站点 / 源码 / 好店），和形态是两件事。</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -238,8 +239,8 @@ export default function EntryForm({
             ) : (
               <div className="sm:col-span-2 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-500">
                 {linkMode === 'internal'
-                  ? '自研工具的 type 固定为「工具」，详情页主按钮走站内 /tools/{slug}/app。'
-                  : '线下好店的 type 固定为「店铺」，详情页主按钮是地图导航。'}
+                  ? '自研工具的 type 固定为「工具分享」，详情页主按钮走站内 /tools/{slug}/app。'
+                  : '线下好店的 type 固定为「好店分享」，详情页主按钮是地图导航。'}
               </div>
             )}
 
@@ -793,7 +794,7 @@ export default function EntryForm({
                         onChange={(event) => field.onChange(Number(event.target.value) || 0)}
                       />
                     </FormControl>
-                    <FormDescription>越大越靠前；新建时留 0 会排到同类型最前</FormDescription>
+                    <FormDescription>越大越靠前（全站一条顺序，不分类型）；新建时留 0 会排到最前</FormDescription>
                   </FormItem>
                 )}
               />

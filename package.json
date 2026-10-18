@@ -21,6 +21,7 @@
     "db:reset": "tsx src/db/reset.ts",
     "backup": "bash scripts/backup.sh",
     "check-links": "tsx scripts/link-check.ts",
+    "sort:normalize": "tsx scripts/normalize-sort-weight.ts",
     "icons:fetch": "tsx scripts/fetch-icons.ts",
     "test:privacy": "tsx tests/privacy.test.ts",
     "test:svg": "tsx tests/svg-sanitize.test.ts"

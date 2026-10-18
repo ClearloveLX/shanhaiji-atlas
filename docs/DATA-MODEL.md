@@ -36,16 +36,17 @@
 
 | | 含义 | 取值 |
 |---|---|---|
-| `entries.type` | 内容分类，决定进哪个列表 | `tool` \| `site` \| `shop` |
+| `entries.type` | 内容分类，决定进哪个列表 | `tool` \| `site` \| `code` \| `shop` |
 | `entries.link_mode` | 交互形态，决定详情页长什么样 | `external` \| `internal` \| `place` |
 
 组合起来：
 
 | type | link_mode | 是什么 | 主按钮 |
 |---|---|---|---|
-| `tool` | `external` | 别人的在线工具（Figma） | 访问官网（外链） |
+| `tool` | `external` | 别人的工具或软件官网（Figma、XMind） | 访问官网（外链） |
 | `tool` | `internal` | **我自研的小工具** | 打开工具（站内 `/tools/x/app`） |
 | `site` | `external` | 常用站点（B 站） | 访问网站（外链） |
+| `code` | `external` | 开源仓库 / 代码站（GitHub、Gitee） | 访问仓库（外链） |
 | `shop` | `external` | 线上店铺 | 去逛逛（外链） |
 | `shop` | `place` | **线下好店** | 导航过去（地图 deeplink） |
 
@@ -111,12 +112,12 @@ import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey } from
 **不要出现 `pgTable` / `jsonb` / `timestamptz` / `uuid()` / `varchar()` —— 那些是 Postgres 的。**
 （唯一例外：讲"以后怎么迁到 Postgres"时提及）
 
-### 2.1 `entries` —— 三类条目统一主表
+### 2.1 `entries` —— 四类条目统一主表
 
 ```ts
 export const entries = sqliteTable('entries', {
   id:            text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  type:          text('type').notNull(),          // tool | site | shop
+  type:          text('type').notNull(),          // tool | site | code | shop
   linkMode:      text('link_mode').notNull(),     // external | internal | place
   visibility:    text('visibility').notNull().default('public'),  // public | unlisted | private
   slug:          text('slug').notNull(),
@@ -164,26 +165,24 @@ export const entries = sqliteTable('entries', {
 - `map_query` 只有 `type = 'shop'` 才有意义（其它类型填了会被拒），且**任何 `link_mode` 都能填**：
   `external` 的网店如果也有实体店（迪卡侬、盒马、MUJI），详情页会同时给「访问官网」和「在地图上找最近的」
 - `visibility` 的三档行为见 [PRIVACY.md](PRIVACY.md) 第一节的行为矩阵
-- `sort_weight` 是**站长手动排序**用的（越大越靠前）。前台三个列表默认就按它排
-  （`sort=manual`，见 `src/lib/list-params.ts`），没调过的条目都是 0，退回按收录时间排，
-  所以「不调 = 和以前一样」。**后台 `/admin/entries` 默认就打开「手动排序」**（站长进来想看的
-  就是自己排的那套顺序，而不是「按更新时间」），**按住任意一行上下拖动**即可调整；
-  键盘用户选中左侧序号后按 ↑↓ 也能微调（拖动走 `reorderEntry`，键盘走 `moveEntry`）。
-  列表最左边的「序号」就是它在自己那一类里排第几位（前台就是这个位置，跨分页也算得准）；
-  **作用范围是同类型内部**——`/tools`、`/sites`、`/shops` 三个列表各管各的顺序，跨类型拖会被忽略。
+- `sort_weight` 是**全站唯一的手动顺序**（越大越靠前），`src/db/queries.ts` 里只有 `manualOrder()`
+  一处定义。**所有类型混在同一条队列里**：工具、站点、源码、好店不分组，后台拖到哪就是哪，
+  **可以跨类型拖**（拖动走 `reorderEntry`，键盘走 `moveEntry`）。前台 `/tools`、`/sites`、`/codes`、`/shops`、
+  搜索结果、以及首页「编辑精选」全都从这条队列里各取自己那一段 —— 所以「先分类筛选、再按实际顺序看」
+  得到的就是它。没调过的条目权重都是 0，退回按收录时间排，所以「不调 = 和以前一样」。
+- 后台 `/admin/entries` 默认就打开「手动排序」（站长进来想看的是自己排的那套顺序，而不是「按更新时间」）：
+  按住任意一行上下拖动即可调整，键盘用户选中左侧序号后按 ↑↓ 也能微调。列表最左边的「序号」就是它
+  在**整条队列里排第几位**（`getAdminEntryPositions()` 用窗口函数一次算完，跨分页也算得准；
+  不列出 / 私密的条目不进前台，所以没有名次，显示 `—`）。
   拖动落位是按「放到谁的哪一边」传给服务端（`reorderEntry(id, targetId, before | after)`），
   不是传行号 —— 后台可能正带着筛选条件，看到的行号和真实名次对不上，用邻居定位才不会错位。
   点表头排序后，表头会出现一个 × 用来清除排序（回到手动顺序）。
-  调整时会把整组重排成 10 的倍数（否则两个 0 互换等于没动），且**不动 `updated_at`**：
+  调整时会把整条队列重排成 10 的倍数（否则两个 0 互换等于没动），且**不动 `updated_at`**：
   调顺序不是内容改动，不该把「按更新时间」的列表搅乱。
-  新建条目时留 0 会自动取「同类型最大权重 + 10」（排到最前），
-  否则第一次调完顺序后，新条目会掉到列表最后。
-- `sort_weight` 是**全站唯一的权威顺序**，`src/db/queries.ts` 里只有 `manualOrder()` 一处定义：
-  后台列表（手动模式）、前台三个列表、搜索结果、以及首页「编辑精选」全都走它。
-  **「编辑精选」不另排一套顺序**，它就是从这份顺序里筛出 `featured = true` 的那几条
+  新建条目时留 0 会自动取「全站最大权重 + 10」（排到最前），否则第一次调完顺序后，新条目会掉到最后。
+- **「编辑精选」不另排一套顺序**，它就是从这条队列里筛出 `featured = true` 的那几条
   （`getPublicFeatured()`），所以后台看到的顺序就是精选区的顺序；`featured` 只决定「收不收进精选」。
-  跨类型的先后由类型分组决定（工具 → 站点 → 店铺），拖拽只在同类型内生效。
-  「精选优先」（`sort=featured`）是另一回事：精选的排前面，组内仍是这份权威顺序。
+  「精选优先」（`sort=featured`）是另一回事：精选的排前面，组内仍是这条队列。
 - **点击量（`click_count`）不参与排序**，只在后台列表里显示给站长当参考（`/admin/entries` 的「点击」列，
   第二行是详情页浏览量 `view_count`）。理由：按点击自动排会让初始化阶段无从下手 ——
   新站刚上线时所有条目点击都是 0，谁先谁后全凭噪声。要看「谁最常用」去 `/admin/clicks`。
@@ -497,11 +496,14 @@ export const pageViewDaily = sqliteTable('page_view_daily', {
 
 ---
 
-## 四、三类内容的实现要点
+## 四、四类内容的实现要点
 
 ### 4.1 外部链接
 
 **要点：所有外链走 `/go/[slug]`，不要直接放原始 URL。**
+
+> `type=site`（站点分享）和 `type=code`（源码分享）走的都是这一套，区别只在进哪个列表页；
+> 主按钮文案按 `type` 微调（访问网站 / 访问仓库），跳转逻辑完全相同。
 
 ```
 src/app/go/[slug]/route.ts
@@ -728,7 +730,7 @@ short_links
 
 **绝对不要把上传的文件放进 `public/`。** 部署方式是「本地构建 → 只把构建产物传上去」，
 `public/` 每次发布都会被整个替换掉，放里面的上传文件全丢。
-完整说明见 [`SERVER-DEPLOY.md`](SERVER-DEPLOY.md) 第八节：
+完整说明见 [`DEPLOY.md`](DEPLOY.md) 第五、六节：
 
 | 资源 | 存哪 | 访问 URL |
 |---|---|---|

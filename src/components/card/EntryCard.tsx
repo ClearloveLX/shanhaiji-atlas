@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { MapPin, Sparkles } from 'lucide-react';
 import type { Tag } from '@/db/schema';
-import { sortChips } from '@/lib/tags';
+import { ENTRY_TYPE_LABELS, listSegment, sortChips } from '@/lib/tags';
 import { cn, colorFromName, domainOf, initialOf } from '@/lib/utils';
 
 export type EntryCardData = {
@@ -55,7 +55,7 @@ export default function EntryCard({
 
   return (
     <Link
-      href={`/${entry.type === 'site' ? 'sites' : entry.type === 'shop' ? 'shops' : 'tools'}/${entry.slug}`}
+      href={`/${listSegment(entry.type)}/${entry.slug}`}
       target="_blank"
       rel="noopener"
       className={cn('surface surface-hover flex flex-col gap-3', feature ? 'p-5' : 'p-4', dimmed && 'opacity-60', className)}
@@ -93,7 +93,7 @@ export default function EntryCard({
             {entry.nameEn ? <span className="truncate text-xs text-muted-foreground">{entry.nameEn}</span> : null}
 
             {entry.linkMode === 'internal' ? (
-              <span className="rounded-full bg-brand-soft px-1.5 py-0.5 text-[11px] font-medium text-brand">自研</span>
+              <span className="rounded-full bg-brand-soft px-1.5 py-0.5 text-[11px] font-medium text-brand">基本自研</span>
             ) : null}
 
             {entry.linkMode === 'place' && entry.city ? (
@@ -126,7 +126,7 @@ export default function EntryCard({
         <div className="flex flex-wrap items-center gap-1.5">
           {showType ? (
             <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">
-              {entry.type === 'tool' ? '工具' : entry.type === 'site' ? '站点' : '店铺'}
+              {ENTRY_TYPE_LABELS[entry.type] ?? entry.type}
             </span>
           ) : null}
 

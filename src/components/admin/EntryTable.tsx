@@ -62,7 +62,7 @@ export default function EntryTable({
   pageSize: number;
   sort: string;
   dir: 'asc' | 'desc';
-  /** 手动排序视图专用：id → 在自己类型里的第几位 / 该类型总数 */
+  /** 手动排序视图专用：id → 在整条手动顺序里排第几位 / 总数（所有类型混在一起数） */
   positions?: Record<string, { position: number; total: number }>;
   tags: TagOption[];
 }) {
@@ -111,9 +111,8 @@ export default function EntryTable({
         return;
       }
 
-      const label = ENTRY_TYPE_LABELS[row.type] ?? row.type;
       const verb = direction === 'up' ? '上移' : '下移';
-      toast.success(`「${result.data.name}」已${verb}到${label}第 ${result.data.position} 位（共 ${result.data.total} 条）`);
+      toast.success(`「${result.data.name}」已${verb}到第 ${result.data.position} 位（共 ${result.data.total} 条）`);
       router.refresh();
     },
     [router],
@@ -122,7 +121,7 @@ export default function EntryTable({
   /** 拖动落位：告诉服务端「放到谁的哪一边」，剩下的顺序由服务端按权威顺序重算 */
   const handleDrop = useCallback(
     async (source: AdminEntryRow, target: AdminEntryRow, place: 'before' | 'after') => {
-      if (source.id === target.id || source.type !== target.type) return;
+      if (source.id === target.id) return;
 
       const result = await reorderEntry(source.id, target.id, place);
       if (!result.ok) {
@@ -132,8 +131,7 @@ export default function EntryTable({
 
       if (!result.data.changed) return;
 
-      const label = ENTRY_TYPE_LABELS[target.type] ?? target.type;
-      toast.success(`「${result.data.name}」已移到${label}第 ${result.data.position} 位（共 ${result.data.total} 条）`);
+      toast.success(`「${result.data.name}」已移到第 ${result.data.position} 位（共 ${result.data.total} 条）`);
       router.refresh();
     },
     [router],
@@ -147,7 +145,7 @@ export default function EntryTable({
       {
         key: 'index',
         header: (
-          <span title="手动排序时显示「在自己那一类里排第几位」（前台就是这个位置）；按其它方式排序时，就是当前列表的行号">
+          <span title="手动排序时显示「在整条顺序里排第几位」——工具、站点、店铺混在一起数，前台就是这个位置；按其它方式排序时，就是当前列表的行号">
             序号
           </span>
         ),
@@ -158,15 +156,14 @@ export default function EntryTable({
 
           // 手动排序：第几位 = 前台列表里的位置，一眼能对上
           if (sort === 'manual' && at) {
-            const label = ENTRY_TYPE_LABELS[row.type] ?? row.type;
             return (
               <span className="flex items-center justify-end gap-1">
                 <GripVertical className="size-3.5 shrink-0 text-neutral-300" aria-hidden />
                 <span
                   role="spinbutton"
                   tabIndex={0}
-                  aria-label={`${label}里的第 ${at.position} 位，共 ${at.total} 条。按方向键上 / 下微调顺序，或者直接拖动这一行`}
-                  title={`${label}里的第 ${at.position} 位（共 ${at.total} 条）· 按 ↑↓ 微调`}
+                  aria-label={`第 ${at.position} 位，共 ${at.total} 条。按方向键上 / 下微调顺序，或者直接拖动这一行`}
+                  title={`第 ${at.position} 位（共 ${at.total} 条）· 按 ↑↓ 微调，也可以拖到任意一行`}
                   onKeyDown={(event) => {
                     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
                     event.preventDefault();
@@ -382,9 +379,9 @@ export default function EntryTable({
     <div className={cn(selected.length > 0 && 'pb-20')}>
       {sort === 'manual' ? (
         <p className="mb-2 text-xs text-neutral-500">
-          按住任意一行上下拖动就能调顺序，只能在同一类（工具 / 站点 / 店铺）里拖 ——
-          它对应的是前台 /tools、/sites、/shops 三个列表各自的顺序，松手立刻生效。
-          首页的「编辑精选」不是另排一套，就是这份顺序里筛出标了精选的那几条，所以这里的顺序就是精选区的顺序。
+          按住任意一行上下拖动就能调顺序，工具 / 站点 / 店铺混在同一条队列里，拖到哪就是哪，松手立刻生效。
+          前台 /tools、/sites、/shops 各取自己那一段，所以分类页里看到的还是这条顺序。
+          首页的「编辑精选」也不是另排一套，就是这份顺序里筛出标了精选的那几条。
           键盘选中左侧序号后按 ↑↓ 也能微调。点击 / 浏览只是给你看的参考，不会自动影响顺序。
         </p>
       ) : null}
@@ -412,9 +409,9 @@ export default function EntryTable({
                   event.dataTransfer.setData('text/plain', row.id);
                 },
                 onDragOver: (event) => {
-                  // 只接受同一类里的行：跨类型拖是没意义的（前台各排各的）
+                  // 全站一条队列，跨类型也能拖（工具可以排到站点前面）
                   const source = dragSourceRef.current;
-                  if (!source || source.id === row.id || source.type !== row.type) return;
+                  if (!source || source.id === row.id) return;
                   event.preventDefault();
                   event.dataTransfer.dropEffect = 'move';
                   const rect = event.currentTarget.getBoundingClientRect();

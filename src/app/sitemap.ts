@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getPublicEntriesForSitemap, getPublicTagTree } from '@/db/queries';
 import { absoluteUrl } from '@/lib/site-config';
+import { listSegment } from '@/lib/tags';
 
 /**
  * sitemap.xml —— 从数据库生成。
@@ -14,13 +15,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl('/'), changeFrequency: 'daily', priority: 1 },
     { url: absoluteUrl('/tools'), changeFrequency: 'daily', priority: 0.9 },
     { url: absoluteUrl('/sites'), changeFrequency: 'daily', priority: 0.9 },
+    { url: absoluteUrl('/codes'), changeFrequency: 'daily', priority: 0.9 },
     { url: absoluteUrl('/shops'), changeFrequency: 'daily', priority: 0.9 },
     { url: absoluteUrl('/tags'), changeFrequency: 'weekly', priority: 0.8 },
     { url: absoluteUrl('/submit'), changeFrequency: 'monthly', priority: 0.3 },
   ];
 
   const entryPages: MetadataRoute.Sitemap = entries.map((entry) => ({
-    url: absoluteUrl(`/${entry.type === 'site' ? 'sites' : entry.type === 'shop' ? 'shops' : 'tools'}/${entry.slug}`),
+    url: absoluteUrl(`/${listSegment(entry.type)}/${entry.slug}`),
     lastModified: new Date(entry.updatedAt),
     changeFrequency: 'weekly',
     priority: 0.6,

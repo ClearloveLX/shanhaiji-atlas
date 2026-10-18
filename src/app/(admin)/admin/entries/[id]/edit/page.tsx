@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { BreadcrumbName } from '@/components/admin/BreadcrumbName';
 import EntryForm from '@/components/admin/EntryForm';
 import { getAdminAllTags, getAdminEntryById } from '@/db/queries';
 import { requireAdmin } from '@/lib/auth';
@@ -24,21 +25,26 @@ export default async function AdminEntryEditPage({ params }: { params: Promise<{
   const allTags = await getAdminAllTags();
 
   return (
-    <EntryForm
-      mode="edit"
-      entryId={entry.id}
-      tags={allTags.map((tag) => ({
-        id: tag.id,
-        dim: tag.dim,
-        slug: tag.slug,
-        name: tag.name,
-        color: tag.color,
-        icon: tag.icon,
-      }))}
-      components={listToolComponents()}
-      defaultValues={buildEntryFormValues(entry)}
-      updatedLabel={formatRelative(entry.updatedAt)}
-      previewHref={`/${listSegment(entry.type)}/${entry.slug}`}
-    />
+    <>
+      {/* 面包屑里那段是数据库主键，这里把它换成条目名 */}
+      <BreadcrumbName>{entry.name}</BreadcrumbName>
+
+      <EntryForm
+        mode="edit"
+        entryId={entry.id}
+        tags={allTags.map((tag) => ({
+          id: tag.id,
+          dim: tag.dim,
+          slug: tag.slug,
+          name: tag.name,
+          color: tag.color,
+          icon: tag.icon,
+        }))}
+        components={listToolComponents()}
+        defaultValues={buildEntryFormValues(entry)}
+        updatedLabel={formatRelative(entry.updatedAt)}
+        previewHref={`/${listSegment(entry.type)}/${entry.slug}`}
+      />
+    </>
   );
 }

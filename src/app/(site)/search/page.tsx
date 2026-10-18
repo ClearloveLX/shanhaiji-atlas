@@ -11,12 +11,12 @@ import { listSegment, listTitle } from '@/lib/tags';
 
 export const metadata: Metadata = {
   title: '搜索',
-  description: '在全部收录里搜工具、站点和店铺。',
+  description: '在全部收录里搜工具、站点、源码和好店。',
   alternates: { canonical: '/search' },
   robots: { index: false, follow: true },
 };
 
-const TYPE_ORDER = ['tool', 'site', 'shop'];
+const TYPE_ORDER = ['tool', 'site', 'code', 'shop'];
 
 function ResultRow({ hit, keyword }: { hit: SearchHit; keyword: string }) {
   const chips = hit.tags.filter((tag) => tag.dim !== 'quality').slice(0, 3);
@@ -113,7 +113,7 @@ export default async function SearchPage({
       </header>
 
       <div className="mt-8">
-        <SearchBox className="w-full" size="lg" placeholder="搜工具、站点、店铺、标签" />
+        <SearchBox className="w-full" size="lg" placeholder="搜工具、站点、源码、好店、标签" />
       </div>
 
       {keyword ? (

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { absoluteUrl, siteConfig } from '@/lib/site-config';
+import { listSegment } from '@/lib/tags';
 import type { Entry } from '@/db/schema';
 
 /**
@@ -79,11 +80,12 @@ export function jsonLdWebSite(): JsonLdValue {
 const SCHEMA_TYPE_BY_ENTRY: Record<string, string> = {
   tool: 'SoftwareApplication',
   site: 'WebSite',
+  code: 'SoftwareSourceCode',
   shop: 'Store',
 };
 
 export function jsonLdEntry(entry: Pick<Entry, 'type' | 'name' | 'nameEn' | 'summary' | 'slug' | 'url' | 'createdAt'>): JsonLdValue {
-  const segment = entry.type === 'site' ? 'sites' : entry.type === 'shop' ? 'shops' : 'tools';
+  const segment = listSegment(entry.type);
 
   return {
     '@context': 'https://schema.org',
@@ -123,7 +125,7 @@ export function jsonLdCollectionPage({
         '@type': 'ListItem',
         position: index + 1,
         name: entry.name,
-        url: absoluteUrl(`/${entry.type === 'site' ? 'sites' : entry.type === 'shop' ? 'shops' : 'tools'}/${entry.slug}`),
+        url: absoluteUrl(`/${listSegment(entry.type)}/${entry.slug}`),
       })),
     },
     breadcrumb: {

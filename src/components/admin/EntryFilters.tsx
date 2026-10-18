@@ -15,9 +15,10 @@ import type { TagDim } from '@/types';
 
 const TYPE_OPTIONS = [
   { value: '', label: '全部类型' },
-  { value: 'tool', label: '工具' },
-  { value: 'site', label: '站点' },
-  { value: 'shop', label: '店铺' },
+  { value: 'tool', label: '工具分享' },
+  { value: 'site', label: '站点分享' },
+  { value: 'code', label: '源码分享' },
+  { value: 'shop', label: '好店分享' },
 ];
 
 const STATUS_OPTIONS = [
@@ -37,7 +38,7 @@ const VISIBILITY_OPTIONS = [
 const MODE_OPTIONS = [
   { value: '', label: '全部形态' },
   { value: 'external', label: '外部链接' },
-  { value: 'internal', label: '自研工具' },
+  { value: 'internal', label: '基本自研' },
   { value: 'place', label: '线下好店' },
 ];
 

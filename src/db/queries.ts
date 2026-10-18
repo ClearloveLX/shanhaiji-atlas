@@ -234,19 +234,16 @@ function buildEntryConditions(query: EntryQuery, visibility: string | null): SQL
   return conditions;
 }
 
-/** 手动排序时先按类型分组，顺序和前台导航一致：工具 → 站点 → 店铺 */
-const manualTypeRank = sql`case ${entries.type} when 'tool' then 0 when 'site' then 1 when 'shop' then 2 else 3 end`;
-
 /**
- * **权威顺序**：站长在后台用拖动 / ↑↓ 调出来的那一份，全站只有这一套定义。
+ * **权威顺序**：站长在后台拖出来 / ↑↓ 调出来的那一份，全站只有这一套定义。
  *
- * 先按类型分组（工具 → 站点 → 店铺），组内 `sort_weight` 从大到小；
+ * 所有类型混在**同一条队列**里（工具、站点、源码、好店不分组），`sort_weight` 越大越靠前；
  * 没调过的都是 0，退回按收录时间排，所以不调就和以前一样。
- * 后台列表、前台各列表、以及首页「编辑精选」，全都走这里 ——
- * 精选只是从这份顺序里筛出来的一个子集，不另排一套。
+ * 后台列表、前台四个列表、搜索结果、以及首页「编辑精选」全都走这里 ——
+ * 分类页（/tools、/sites、/codes、/shops）只是从这条队列里各取自己那一段。
  */
 function manualOrder() {
-  return [manualTypeRank, desc(entries.sortWeight), desc(entries.createdAt)];
+  return [desc(entries.sortWeight), desc(entries.createdAt)];
 }
 
 function orderByFor(sort: EntrySort | undefined, dir: 'asc' | 'desc' = 'desc') {
@@ -792,7 +789,7 @@ export async function getAdminEntries(query: EntryQuery = {}): Promise<Paged<Ent
   const totalRow = db.select({ count: sql<number>`count(*)` }).from(entries).where(where).get();
   const total = totalRow?.count ?? 0;
 
-  // 手动排序 = 权威顺序（类型分组 + sort_weight），orderByFor 里已经带上类型分组
+  // 手动排序 = 权威顺序（全站一条队列，正好也覆盖了 getAdminEntryPositions 的名次）
   const orderBy = orderByFor(query.sort, query.dir);
 
   const rows = db
@@ -830,20 +827,22 @@ export async function getAdminEntryBySlug(type: string, slug: string): Promise<A
 }
 
 /**
- * 手动排序视图用：每个公开条目在**自己类型里排第几位**（顺带给出该类型总数）。
+ * 手动排序视图用：每个公开条目在**整条手动顺序里排第几位**（顺带给出总数）。
+ *
+ * 所有类型混在一起数，不分工具 / 站点 / 源码 / 好店 —— 前台四个列表各自看到的是这一条
+ * 队列的一段，所以数字在分类页里也是连续的（比如只有站点时才显示 3、7、8）。
  *
  * 为什么用窗口函数一次算完、而不是在前端按当前页数出来：
- * 分页后第二页会从 1 重新数，数字就错了。这里算的是「同类型内部的名次」，
- * 也就是前台 /tools、/sites、/shops 里的位置，**跟后台的筛选条件无关**，
- * 所以只排掉软删除和非公开条目，不加任何筛选。
+ * 分页后第二页会从 1 重新数，数字就错了。这里算的是全站名次，**跟后台的筛选条件无关**，
+ * 所以只排掉软删除和非公开条目（隐藏条目不进前台，就没有名次），不加任何筛选。
  */
 export async function getAdminEntryPositions(): Promise<Record<string, { position: number; total: number }>> {
   await requireAdmin();
 
   const rows = db.all<{ id: string; rn: number; cnt: number }>(sql`
     select id,
-           row_number() over (partition by type order by sort_weight desc, created_at desc) as rn,
-           count(*) over (partition by type) as cnt
+           row_number() over (order by sort_weight desc, created_at desc) as rn,
+           count(*) over () as cnt
     from ${entries}
     where deleted_at is null and visibility = 'public'
   `);

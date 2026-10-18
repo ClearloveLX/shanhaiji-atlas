@@ -8,7 +8,7 @@ import { TagMatchFallback } from '@/components/filter/TagMatchToggle';
 import SortSelect from '@/components/search/SortSelect';
 
 /**
- * 三个列表页（/tools /sites /shops）共用的模板。
+ * 四个列表页（/tools /sites /codes /shops）共用的模板。
  * 页面本身是 Server Component：从 searchParams 读筛选条件、去数据库查，客户端组件只负责改 URL。
  */
 export default function EntryListPage({

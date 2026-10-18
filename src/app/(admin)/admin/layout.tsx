@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminTopbar from '@/components/admin/AdminTopbar';
+import { BreadcrumbProvider } from '@/components/admin/BreadcrumbName';
 import { getAdminDashboardStats } from '@/db/queries';
 import { auth, requireAdmin } from '@/lib/auth';
 
@@ -19,16 +20,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const [stats, session] = await Promise.all([getAdminDashboardStats(), auth()]);
 
   return (
-    <div className="min-h-dvh bg-neutral-100 text-neutral-900">
-      <AdminSidebar
-        pendingSubmissions={stats.pendingSubmissions}
-        staleCount={stats.staleCount}
-        email={session?.user?.email ?? ''}
-      />
-      <div className="lg:pl-[220px]">
-        <AdminTopbar />
-        <main className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6">{children}</main>
+    <BreadcrumbProvider>
+      <div className="min-h-dvh bg-neutral-100 text-neutral-900">
+        <AdminSidebar
+          pendingSubmissions={stats.pendingSubmissions}
+          staleCount={stats.staleCount}
+          email={session?.user?.email ?? ''}
+        />
+        <div className="lg:pl-[220px]">
+          <AdminTopbar />
+          <main className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6">{children}</main>
+        </div>
       </div>
-    </div>
+    </BreadcrumbProvider>
   );
 }

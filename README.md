@@ -2,7 +2,7 @@
 
 > 万物皆可收录，一签就能找到。
 
-一个**可持续维护**的生活导航站：在线工具 + 常用站点 + 推荐店铺，按多维度标签组织。
+一个**可持续维护**的生活导航站：工具 + 站点 + 源码 + 好店，按多维度标签组织。
 日常维护全部在 `/admin` 后台完成 —— 加条目、改标签、审投稿、查死链，点几下就行，
 **不需要改代码，也不需要重新构建**。
 
@@ -62,17 +62,15 @@ shanhaiji-atlas/
 │   ├── …  0002 / 0003 / 0004 / 0005
 │   └── meta/_journal.json             #   迁移顺序表，scripts/migrate.mjs 也读它
 │
-├── docs/                              # 设计文档（这份 README 讲"是什么"，docs/ 讲"为什么"）
-│   ├── DATA-MODEL.md                  # ★ 数据模型设计（三种形态、为什么这么拆）
-│   ├── PRIVACY.md                     # ★ 私密层设计（三档可见性、三条防泄漏铁律）
-│   ├── SERVER-DEPLOY.md               # ★ 选型论证（为什么 SQLite / 不用 Docker / 在哪构建）
-│   ├── DEPLOY.md                      # ★ 实际部署手册（照抄可执行，含故障排查）
-│   ├── NAMING.md                      # 命名规范
-│   ├── TAGS.md                        # 标签体系定义
-│   ├── CONTENT-GUIDE.md               # 收录标准与文案规范
-│   ├── SEO-CHECKLIST.md               # 上线后 SEO 检查清单
+├── docs/                              # 手册（这份 README 讲"是什么"，docs/ 讲"怎么用、怎么改"）
+│   ├── DATA-MODEL.md                  # ★ 数据模型（表定义与字段语义）
+│   ├── PRIVACY.md                     # ★ 私密层（三档可见性、三条防泄漏铁律）
+│   ├── DEPLOY.md                      # ★ 部署手册（照抄可执行，含故障排查）
 │   ├── MAINTENANCE.md                 # 日常维护手册（每周/每月做什么）
-│   └── PROMPTS.md                     # 历史提示词归档（★ 顶部有"已作废"清单，别照抄）
+│   ├── CONTENT-GUIDE.md               # 收录标准与文案规范
+│   ├── TAGS.md                        # 标签体系定义
+│   ├── NAMING.md                      # 命名规范
+│   └── SEO-CHECKLIST.md               # 上线后 SEO 检查清单
 │
 ├── public/                            # 构建期静态资源。**当前是空的，这是正常的**
 │                                      #   favicon → src/app/favicon.ico（Next 约定）
@@ -117,7 +115,7 @@ shanhaiji-atlas/
 │   │   │   │                          #   （每个功能一个 page.tsx，列表见下）
 │   │   │   └── me/                    # ★ 站长区：用前台卡片看全部内容（含私密）
 │   │   │       ├── page.tsx           #   我的私藏 / 想去 / 最近添加 / 待办
-│   │   │       ├── {tools,sites,shops}/page.tsx       # 各类型全量列表（三种可见性都显示）
+│   │   │       ├── {tools,sites,codes,shops}/page.tsx  # 各类型全量列表（三种可见性都显示）
 │   │   │       ├── search/page.tsx    #   全量搜索（含私密）
 │   │   │       ├── notes/page.tsx     #   私人笔记流
 │   │   │       ├── entries/[id]/page.tsx
@@ -230,7 +228,7 @@ shanhaiji-atlas/
 
 | 表 | 作用 | 关系 |
 |---|---|---|
-| `entries` | 三类条目统一存一张表：`type` 决定分类、`link_mode` 决定形态、`visibility` 决定可见性 | — |
+| `entries` | 四类条目统一存一张表：`type` 决定分类、`link_mode` 决定形态、`visibility` 决定可见性 | — |
 | `entry_tools` | **自研工具**专属：组件名、运行时、用量、版本 | 1:1 |
 | `entry_branches` | **线下门店**：地址、经纬度、电话、营业时间 | 1:N |
 | `entry_qrcodes` | **二维码**：标签、图片、**过期时间**、展示统计 | 1:N |
@@ -355,7 +353,7 @@ python deploy.py --logs             # 看应用日志
 | **release + 软链** | 部署期间旧版本仍在服务；回滚 = 换一条软链 + 重启，2 秒 |
 | **Caddy 而不是 nginx** | 一条 `handle` 就能反代，HTTPS 证书自动申请续期，不用 certbot |
 
-完整论证见 [`docs/SERVER-DEPLOY.md`](docs/SERVER-DEPLOY.md)，可照抄的操作步骤见 [`docs/DEPLOY.md`](docs/DEPLOY.md)。
+完整论证与可照抄的操作步骤见 [`docs/DEPLOY.md`](docs/DEPLOY.md)。
 
 ### 三个容易踩的坑（都已处理，改部署脚本时别删）
 

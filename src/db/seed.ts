@@ -417,7 +417,7 @@ type BranchSeed = {
 };
 
 type EntrySeed = {
-  type: 'tool' | 'site' | 'shop';
+  type: 'tool' | 'site' | 'code' | 'shop';
   linkMode: 'external' | 'internal' | 'place';
   slug: string;
   name: string;

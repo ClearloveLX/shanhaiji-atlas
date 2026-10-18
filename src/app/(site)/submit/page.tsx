@@ -7,7 +7,7 @@ import { siteConfig } from '@/lib/site-config';
 
 export const metadata: Metadata = {
   title: '推荐收录 / 建议反馈',
-  description: `把你觉得好用的工具、站点或店铺推荐给 ${siteConfig.fullName}，也可以提站点本身的建议和 BUG。`,
+  description: `把你觉得好用的工具、站点、源码或好店推荐给 ${siteConfig.fullName}，也可以提站点本身的建议和 BUG。`,
   alternates: { canonical: '/submit' },
 };
 
@@ -49,7 +49,7 @@ export default async function SubmitPage() {
         <p className="eyebrow">投稿</p>
         <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">推荐收录 / 建议反馈</h1>
         <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-          推荐你实际在用的工具、站点或店铺，不必写成广告语；站点本身哪里别扭、哪里出错了，也在同一个表单里提。
+          推荐你实际在用的工具、站点、源码或好店，不必写成广告语；站点本身哪里别扭、哪里出错了，也在同一个表单里提。
           两种都会人工看，通过后收录或修掉。
         </p>
       </header>

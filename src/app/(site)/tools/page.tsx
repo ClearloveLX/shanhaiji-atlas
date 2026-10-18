@@ -7,8 +7,8 @@ import { parseListQuery } from '@/lib/list-params';
 import { listTitle } from '@/lib/tags';
 
 export const metadata: Metadata = {
-  title: '在线工具',
-  description: '能直接解决问题的在线工具：设计、图片、效率、开发，按场景和属性筛。',
+  title: '工具分享',
+  description: '在浏览器里直接能用的小工具，加上软件的官网：设计、图片、效率、开发，按场景和属性筛。',
   alternates: { canonical: '/tools' },
 };
 

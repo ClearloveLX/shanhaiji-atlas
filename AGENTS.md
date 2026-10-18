@@ -14,7 +14,7 @@
 
 ## 1. 项目是什么
 
-「山海集 Atlas」是一个**可持续维护的生活导航站**：收录**在线工具、常用站点、推荐店铺**，
+「山海集 Atlas」是一个**可持续维护的生活导航站**：收录**工具、站点、源码与好店**，
 按多维度标签组织，支持搜索、多标签筛选、标签聚合页。
 
 **核心诉求是「好维护」**：日常加内容、改标签、处理投稿，全部在 `/admin` 后台点几下完成，
@@ -36,7 +36,7 @@
 **目标机器只有 2 核 / 2 GB 内存（日常可用约 1.2 GB，另挂 2 GB swap）**，因此：
 
 - **绝对不要加 `output: 'export'`**——会变成静态站，失去后台维护能力
-- **不要引入 Docker、PostgreSQL、Redis 或任何额外常驻进程**（理由见 `docs/SERVER-DEPLOY.md`）
+- **不要引入 Docker、PostgreSQL、Redis 或任何额外常驻进程**（2 核 2 GB 的机器，Docker 会吃掉近一半可用内存）
 - **默认不在服务器上跑 `pnpm build`**：不是会 OOM（swap 已实测够用），而是服务器
   构建要 5-15 分钟，且期间站点被换出到 swap 变慢；本地构建 + 打包传输只要 40 秒。
   **但这是取舍不是禁令** —— 紧急情况可以 `git clone` 到新 release 目录里构建再换软链。
@@ -57,7 +57,7 @@
 
 配套规则：
 
-- `entries.type`（tool/site/shop）决定**进哪个列表**；`link_mode` 决定**详情页长什么样**。两者正交，不要混。
+- `entries.type`（tool/site/code/shop）决定**进哪个列表**；`link_mode` 决定**详情页长什么样**。两者正交，不要混。
 - **自研工具的功能代码在 `src/tools/<slug>/`；给 registry 用的最小元数据在同目录 `meta.ts`
   （`{ slug, name, description, version, usesServer, needsWorker }`）；可检索、可筛选、进 SEO 的部分
   （标签、正文介绍、推荐位）在数据库里。** 两者靠 `entry_tools.component`

@@ -14,7 +14,7 @@ import type { NavItem } from '@/lib/site-config';
  * 手机端菜单（md 以下才出现）。
  *
  * 顶栏上的主导航是 `hidden md:flex`、搜索框是 `hidden lg:block`、推荐收录是 `hidden lg:inline-flex`，
- * 所以在手机上顶栏原来只剩「站标 + 主题按钮」：/tools、/sites、/shops、/tags 一个都进不去，也搜不了。
+ * 所以在手机上顶栏原来只剩「站标 + 主题按钮」：/tools、/sites、/codes、/shops、/tags 一个都进不去，也搜不了。
  * 这个抽屉把那几件事补回来，顺带让自研工具运行页（那套布局故意没有全站导航）有个出口。
  */
 export default function MobileNav({ items }: { items: readonly NavItem[] }) {
@@ -75,7 +75,7 @@ export default function MobileNav({ items }: { items: readonly NavItem[] }) {
         </nav>
 
         <div className="mt-auto flex flex-col gap-3 border-t border-border p-4">
-          <SearchBox className="w-full" placeholder="搜工具、站点、店铺" />
+          <SearchBox className="w-full" placeholder="搜工具、站点、源码、好店" />
           <Button asChild className="h-11 w-full">
             <Link href="/submit" onClick={() => setOpen(false)}>
               推荐收录

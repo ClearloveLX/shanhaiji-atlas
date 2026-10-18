@@ -5,7 +5,7 @@ import { toCardData } from '@/lib/list-page';
 
 /**
  * 详情页共用的取数逻辑：条目详情 + 同场景推荐 4 条 + 主门店城市。
- * 三个详情页（/tools /sites /shops）都调它，前端只是外壳不同。
+ * 四个详情页（/tools /sites /codes /shops）都调它，前端只是外壳不同。
  */
 export async function loadEntryDetailPage(
   type: string,

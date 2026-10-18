@@ -9,11 +9,11 @@ import JsonLd from '@/components/layout/JsonLd';
 import { Button } from '@/components/ui/button';
 import type { EntryDetail as EntryDetailData } from '@/db/queries';
 import { jsonLdEntry } from '@/lib/seo';
-import { sortChips } from '@/lib/tags';
+import { ENTRY_TYPE_LABELS, listSegment, sortChips } from '@/lib/tags';
 import { colorFromName, domainOf, formatDate, initialOf } from '@/lib/utils';
 
 /**
- * 详情页主体（三个类型共用）。
+ * 详情页主体（四个类型共用）。
  *
  * 标签页策略：列表里的卡片新开标签进详情（见 EntryCard），详情页的主按钮**覆盖当前标签** ——
  * 列表留在原标签，一个东西一个标签，不会越点越多。
@@ -36,7 +36,7 @@ export default function EntryDetail({
   sidebar?: ReactNode;
   headerExtra?: ReactNode;
 }) {
-  const segment = detail.type === 'site' ? 'sites' : detail.type === 'shop' ? 'shops' : 'tools';
+  const segment = listSegment(detail.type);
   const chips = sortChips(detail.tags);
   const platformTags = chips.filter((tag) => tag.dim === 'platform');
   const priceTags = chips.filter((tag) => tag.dim === 'price');
@@ -78,7 +78,7 @@ export default function EntryDetail({
           </li>
           <li>
             <Link href={`/${segment}`} className="transition-colors duration-150 hover:text-foreground">
-              {detail.type === 'site' ? '常用站点' : detail.type === 'shop' ? '推荐店铺' : '在线工具'}
+              {ENTRY_TYPE_LABELS[detail.type] ?? detail.type}
             </Link>
           </li>
           <li aria-hidden className="text-border">

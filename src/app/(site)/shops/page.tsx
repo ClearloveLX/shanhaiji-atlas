@@ -9,7 +9,7 @@ import { parseListQuery } from '@/lib/list-params';
 import { listTitle } from '@/lib/tags';
 
 export const metadata: Metadata = {
-  title: '推荐店铺',
+  title: '好店分享',
   description: '线上店与线下实体店：能逛、能买、能去的都收在这里，线下店带地址和导航。',
   alternates: { canonical: '/shops' },
 };

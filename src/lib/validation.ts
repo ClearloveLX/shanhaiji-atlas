@@ -14,7 +14,7 @@ import { z } from 'zod';
 export const TAG_DIMS = ['topic', 'scene', 'attr', 'platform', 'price', 'quality'] as const;
 export type TagDim = (typeof TAG_DIMS)[number];
 
-export const ENTRY_TYPES = ['tool', 'site', 'shop'] as const;
+export const ENTRY_TYPES = ['tool', 'site', 'code', 'shop'] as const;
 export const LINK_MODES = ['external', 'internal', 'place'] as const;
 export const ENTRY_STATUSES = ['active', 'stale', 'dead'] as const;
 export const VISIBILITIES = ['public', 'unlisted', 'private'] as const;

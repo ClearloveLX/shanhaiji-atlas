@@ -1,5 +1,6 @@
 import { getPublicLatest } from '@/db/queries';
 import { absoluteUrl, siteConfig } from '@/lib/site-config';
+import { listSegment } from '@/lib/tags';
 
 /** XML 转义：标题和简介里出现 & < > 是常事 */
 function escapeXml(value: string): string {
@@ -17,9 +18,7 @@ export async function GET() {
 
   const items = entries
     .map((entry) => {
-      const link = absoluteUrl(
-        `/${entry.type === 'site' ? 'sites' : entry.type === 'shop' ? 'shops' : 'tools'}/${entry.slug}`,
-      );
+      const link = absoluteUrl(`/${listSegment(entry.type)}/${entry.slug}`);
       const pubDate = new Date(entry.createdAt).toUTCString();
 
       return [

@@ -14,7 +14,7 @@ import {
   CommandShortcut,
 } from '@/components/ui/command';
 import { useDebounce } from '@/hooks/use-debounce';
-import { listSegment } from '@/lib/tags';
+import { ENTRY_TYPE_LABELS, listSegment } from '@/lib/tags';
 
 export type PaletteTag = { slug: string; name: string; dim: string };
 
@@ -28,14 +28,13 @@ type SearchItem = {
 
 const PAGES = [
   { label: '首页', href: '/' },
-  { label: '在线工具', href: '/tools' },
-  { label: '常用站点', href: '/sites' },
-  { label: '推荐店铺', href: '/shops' },
+  { label: '工具分享', href: '/tools' },
+  { label: '站点分享', href: '/sites' },
+  { label: '源码分享', href: '/codes' },
+  { label: '好店分享', href: '/shops' },
   { label: '标签总览', href: '/tags' },
   { label: '推荐收录', href: '/submit' },
 ];
-
-const TYPE_LABELS: Record<string, string> = { tool: '工具', site: '站点', shop: '店铺' };
 
 /**
  * ⌘K / Ctrl+K 命令面板：搜条目、跳标签、跳页面。
@@ -131,7 +130,7 @@ export default function CommandPalette({ tags }: { tags: PaletteTag[] }) {
         <CommandInput
           value={keyword}
           onValueChange={setKeyword}
-          placeholder="搜工具、站点、店铺，或者跳标签"
+          placeholder="搜工具、站点、源码、好店，或者跳标签"
         />
 
         <CommandList>
@@ -147,7 +146,7 @@ export default function CommandPalette({ tags }: { tags: PaletteTag[] }) {
                 >
                   <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                   <span className="truncate">{item.name}</span>
-                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">{TYPE_LABELS[item.type] ?? item.type}</span>
+                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">{ENTRY_TYPE_LABELS[item.type] ?? item.type}</span>
                 </CommandItem>
               ))}
             </CommandGroup>

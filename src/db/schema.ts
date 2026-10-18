@@ -48,7 +48,7 @@ export const entries = sqliteTable(
   'entries',
   {
     id: uuidPk(),
-    /** tool | site | shop —— 决定进哪个列表 */
+    /** tool | site | code | shop —— 决定进哪个列表 */
     type: text('type').notNull(),
     /** external | internal | place —— 决定详情页长什么样 */
     linkMode: text('link_mode').notNull(),
