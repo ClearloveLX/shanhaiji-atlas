@@ -383,6 +383,7 @@ export const linkChecks = sqliteTable('link_checks', {
   entryId:    text('entry_id').notNull().references(() => entries.id, { onDelete: 'cascade' }),
   statusCode: integer('status_code'),
   ok:         integer('ok', { mode: 'boolean' }).notNull(),
+  verdict:    text('verdict'),   // ok | dead | unclear（老数据为 null）—— 见下方说明
   error:      text('error'),
   checkedAt:  createdAt(),   // ⚠️ 列名是 created_at，不是 checked_at —— 见下方说明
 }, (t) => [index('link_checks_entry_idx').on(t.entryId, t.checkedAt)])
@@ -401,6 +402,22 @@ export const settings = sqliteTable('settings', {
 > **以 `src/db/schema.ts` 为准** —— 手工写 SQL 时用 `created_at`
 > （迁移实证：`drizzle/0000_condemned_leech.sql`），写成 `checked_at` 会报 `no such column`。
 > 改列名要出新迁移、动已有数据，所以这里只记录现状，不改代码。
+
+**`verdict` 是三档判定，不是布尔 `ok` 的重复。** 巡检结果分：
+
+| verdict | 什么情况 | 会不会动 `entries.status` |
+|---|---|---|
+| `ok` | HTTP 200-399 | 不动 |
+| `dead` | 404 / 410、`ENOTFOUND`（域名没了）、`ECONNREFUSED`（端口没开） | **连续 2 次**才 active → `stale` |
+| `unclear` | 401 / 403 / 406 / 429 / 451、5xx、超时、TLS 握手失败、**首页返回 404**（多半是在拦机器人） | **永远不动**，只留记录 |
+
+`unclear` 单独存在的理由：很多站会拒绝没有浏览器指纹的请求（403 / 406）、限流（429）、
+或者要 8 秒以上才回第一个字节；把它们当死链，好站会被反复标成「疑似失效」，
+每次都要人肉改回来。老数据 `verdict` 为 null，同样不参与判定。
+
+**需要外网才能打开的域名会被巡检直接跳过**（名单在 `src/lib/link-check.ts` 的
+`DEFAULT_SKIP_HOSTS`，`LINK_CHECK_SKIP_HOSTS` 可覆盖）—— 这些条目**不发请求、不写 `link_checks`**，
+状态完全靠人工在后台改。国内机房里 ChatGPT / Gemini 这一批直连就是超时，巡检不出任何有意义的结果。
 
 **注意 SQLite 没有自增序列那一套** —— 主键一律是应用层生成的 uuid（`$defaultFn`），
 不依赖数据库自增。这样备份、迁移、跨环境复制都不会出问题。

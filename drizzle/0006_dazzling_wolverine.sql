@@ -1,0 +1,1 @@
+ALTER TABLE `link_checks` ADD `verdict` text;

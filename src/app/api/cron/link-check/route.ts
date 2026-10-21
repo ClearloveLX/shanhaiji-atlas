@@ -5,6 +5,9 @@ import { runLinkCheck } from '@/lib/link-check';
  * 定时巡检入口：宿主 crontab 每天调用一次
  *   curl -fsS -H "x-cron-token: $CRON_TOKEN" https://example.com/api/cron/link-check
  * token 不匹配直接 401。
+ *
+ * dead（404 / 410 / 域名没了）连续 2 次才标「疑似失效」；
+ * unclear（被反爬拦、限流、5xx、超时）只记录，不会改状态。
  */
 export async function POST(request: Request) {
   const expected = process.env.CRON_TOKEN;
@@ -20,7 +23,9 @@ export async function POST(request: Request) {
       ok: true,
       checked: summary.checked,
       healthy: summary.ok,
-      failed: summary.failed,
+      dead: summary.dead,
+      unclear: summary.unclear,
+      skipped: summary.skipped.length,
       markedStale: summary.markedStale,
     });
   } catch (error) {

@@ -614,12 +614,19 @@ systemctl is-enabled atlas caddy
 
 - 微信群码过了 7 天有效期还会继续挂在页面上 —— 用户扫出来看到"二维码已过期"，站就不可信了
 
-`/api/cron/link-check` 同理（外链巡检、把连续 2 次失败的条目标成「疑似失效」），
-想每天跑就再加一行（巡检比较慢，挑访问低谷）：
+`/api/cron/link-check` 同理（外链巡检）。**加不加这一行是可选**：巡检不是「不做就出事」的功能，
+条目失效最终靠人去后台确认。想每天跑就加一行（巡检比较慢，挑访问低谷）：
 
 ```bash
 #   30 5 * * * curl -fsS -H "x-cron-token: <CRON_TOKEN>" http://你的服务器IP/api/cron/link-check 2>&1 | logger -t atlas-linkcheck
 ```
+
+> **服务器在国内机房，ChatGPT / Gemini / Claude / Grok / Mistral / Llama / HuggingFace
+> 这些站直连就是 8 秒超时**，所以巡检默认跳过它们（名单在 `src/lib/link-check.ts` 的
+> `DEFAULT_SKIP_HOSTS`，可用 `LINK_CHECK_SKIP_HOSTS` 覆盖，设成空串表示一条都不跳）。
+> 想要连它们也巡检，得先给服务器配外网出口 —— 但那样要多挂一个常驻进程，
+> 2 GB 的机器上不值当（见第 2 节）。
+> 这一批条目的死活**手动标记**就行：后台按 `status` 筛、直接改状态。
 
 查 cron 有没有跑：`journalctl -t atlas-qrcodes --since "7 days ago"`。
 手工触发一次看效果：
@@ -1140,9 +1147,11 @@ du -sh /opt/atlas/data/uploads/* /opt/atlas/data/backups
 | 服务开机自启 | `systemctl is-enabled atlas caddy` | 两个都是 `enabled` | `systemctl enable --now atlas caddy` |
 | `.env` 权限 | `stat -c '%a %U' /opt/atlas/.env` | `600 atlas` | `chown atlas:atlas` + `chmod 600` |
 | 库的大小 | `ls -lh /opt/atlas/data/atlas.db*` | 几 MB 到几十 MB | 涨得快看 `click_logs` 和 `link_checks`，这两张表按天/按次累积，可以归档 |
-| 外链巡检 | 手工跑 `curl -fsS -H "x-cron-token: …" http://你的服务器IP/api/cron/link-check` | 输出形如 `检查 N 条，正常 X / 失败 Y（耗时 Zs）` | 连续失败的条目会在后台标成「疑似失效」，去后台确认 |
+| 外链巡检 | 手工跑 `curl -fsS -H "x-cron-token: …" http://你的服务器IP/api/cron/link-check` | 返回 JSON：`checked / healthy / dead / unclear / markedStale` | 只有 `dead`（404 / 410 / 域名没了）连续 2 次才会标「疑似失效」，去后台确认 |
 
-> **关于 link-check 的输出格式**：只有「正常 / 失败」两档，**没有"警告"这一档**。
+> **关于 link-check 的判定**：分 `ok` / `dead` / `unclear` 三档，**没有"警告"这一档**。
+> `unclear`（403 / 406 / 429 / 5xx / 超时 / 证书）只记录，不会改状态 ——
+> 被反爬拦的站点因此不会每次巡检都变成「疑似失效」。
 > 脚本不会自动把条目标成「已失效」——`dead` 必须人工在后台确认。
 
 **升级 Next.js / Node 的正确姿势**：先在本地开一个分支

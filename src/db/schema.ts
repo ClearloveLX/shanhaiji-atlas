@@ -322,6 +322,13 @@ export const linkChecks = sqliteTable(
       .references(() => entries.id, { onDelete: 'cascade' }),
     statusCode: integer('status_code'),
     ok: integer('ok', { mode: 'boolean' }).notNull(),
+    /**
+     * ok 通 | dead 确定失效（404 / 410、域名解析不到、连接被拒）
+     * unclear 判不了（被反爬拦、限流、5xx、超时、TLS 握手失败）——
+     * 只记录，不参与「疑似失效」判定，否则 403 / 超时会把好站反复标成疑似失效
+     * 老数据为 null：同样不参与判定
+     */
+    verdict: text('verdict'),
     error: text('error'),
     checkedAt: createdAt(),
   },
